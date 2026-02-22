@@ -1,0 +1,6 @@
+apple_places:
+  outputs:
+    dev:
+      type: duckdb
+      path: places_database.duckdb
+  target: dev

@@ -1,0 +1,17 @@
+dbt_packages/
+logs/
+.DS_Store
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# dbt Logs
+logs/
+dbt.log
+
+# Raw Data (We don't need to push the mock CSVs to the server)
+../raw_data/
