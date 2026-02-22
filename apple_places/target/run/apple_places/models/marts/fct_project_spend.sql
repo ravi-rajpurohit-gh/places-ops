@@ -1,7 +1,15 @@
 
   
-  create view "places_database"."main"."fct_project_spend__dbt_tmp" as (
-    with expenses as (
+    
+    
+
+    create  table
+      "places_database"."main"."fct_project_spend__dbt_tmp"
+  
+    as (
+      
+
+with expenses as (
     select * from "places_database"."main"."stg_expenses"
 ),
 
@@ -27,4 +35,6 @@ select
 from expenses e
 left join projects p on e.project_id = p.project_id
 left join vendors v on e.vendor_id = v.vendor_id
-  );
+    );
+  
+  

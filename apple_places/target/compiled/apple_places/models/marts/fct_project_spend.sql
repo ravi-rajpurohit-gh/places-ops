@@ -1,3 +1,5 @@
+
+
 with expenses as (
     select * from "places_database"."main"."stg_expenses"
 ),

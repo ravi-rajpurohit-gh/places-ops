@@ -1,3 +1,5 @@
+{{ config(materialized='table') }}
+
 with expenses as (
     select * from {{ ref('stg_expenses') }}
 ),
