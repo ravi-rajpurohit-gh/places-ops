@@ -2,6 +2,12 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import json
+import os
+
+# Get the absolute path of the directory where app.py lives
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(CURRENT_DIR, 'places_database.duckdb')
+TARGET_PATH = os.path.join(CURRENT_DIR, 'target', 'run_results.json')
 
 # 1. Page Configuration
 st.set_page_config(page_title="Places Data Hub", layout="wide")
@@ -30,7 +36,7 @@ with tab1:
     st.header("Campus Construction & Budget Tracking")
     
     # Connect to DuckDB (read_only=True ensures it doesn't lock the database)
-    conn = duckdb.connect('places_database.duckdb', read_only=True)
+    conn = duckdb.connect(DB_PATH, read_only=True)
     
     # Query the dbt mart model
     df = conn.execute("SELECT * FROM main.fct_project_spend").df()
@@ -90,7 +96,7 @@ with tab2:
     
     try:
         # Read the metadata by dbt
-        with open('target/run_results.json', 'r') as f:
+        with open(TARGET_PATH, 'r') as f:
             run_results = json.load(f)
         
         models = []
