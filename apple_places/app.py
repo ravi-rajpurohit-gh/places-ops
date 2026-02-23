@@ -15,7 +15,7 @@ st.title("Apple Places: Operations & Data Health")
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("## Architecture Stack")
+    st.sidebar.title("Architecture Stack")
     st.markdown("""
     **Warehouse:** DuckDB (Local)  
     **Transformation:** dbt-core (1 Mart, 3 Staging)  
@@ -26,6 +26,15 @@ with st.sidebar:
     st.divider()
     st.markdown("**Goal:** Demonstrate end-to-end modeling of complex business data (construction/vendors) and dbt artifact monitoring.")
 
+# --- DATA LOADING (Cached for Performance) ---
+@st.cache_data
+def load_data():
+    # Using a context manager ensures the connection safely closes
+    with duckdb.connect(DB_PATH, read_only=True) as conn:
+        return conn.execute("SELECT * FROM main.fct_project_spend").df()
+
+df = load_data()
+
 # 2. Create the Two Tabs
 tab1, tab2 = st.tabs(["Places Operations", "DBT Pipeline Health"])
 
@@ -35,27 +44,22 @@ tab1, tab2 = st.tabs(["Places Operations", "DBT Pipeline Health"])
 with tab1:
     st.header("Campus Construction & Budget Tracking")
     
-    # Connect to DuckDB (read_only=True ensures it doesn't lock the database)
-    conn = duckdb.connect(DB_PATH, read_only=True)
-    
-    # Query the dbt mart model
-    df = conn.execute("SELECT * FROM main.fct_project_spend").df()
-    
     # Calculate High-Level KPIs
     # Drop duplicates to avoid overcounting budgets that appear on multiple expense rows
     project_budgets = df[['project_name', 'budget_allocated']].drop_duplicates()
     total_budget = project_budgets['budget_allocated'].sum()
     total_spend = df['amount'].sum()
     total_remaining = total_budget - total_spend
-    percentage_spend = 100*total_spend/total_budget
+    percentage_spend = 100 * total_spend / total_budget if total_budget > 0 else 0
     
     # Display KPIs
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Allocated Budget", f"${total_budget:,.0f}")
     col2.metric("Total Capital Spent", f"${total_spend:,.0f}")
-    col3.metric("Remaining Budget", f"${(total_remaining):,.0f}")
+    col3.metric("Remaining Budget", f"${total_remaining:,.0f}")
     
-    st.progress(percentage_spend / 100, text=f"{percentage_spend:,.2f}% of budget consumed")
+    # Cap the progress bar at 1.0 to prevent Streamlit errors if spend exceeds budget
+    st.progress(min(percentage_spend / 100, 1.0), text=f"{percentage_spend:,.2f}% of budget consumed")
     
     st.divider()
     
@@ -91,6 +95,7 @@ with tab1:
     with col_c:
         st.subheader("⚠️ Vendor Risk Assessment")
         reliability_threshold = st.number_input("Flagging vendors with reliability scores below threshold:", min_value=1, max_value=100, value=90)
+        
         # Find risky vendors for this specific campus
         risk_df = filtered_df[['vendor_name', 'reliability_score']].drop_duplicates()
         risky_vendors = risk_df[risk_df['reliability_score'] < reliability_threshold].sort_values('reliability_score')
@@ -101,17 +106,13 @@ with tab1:
             'reliability_score': 'Reliability Score'
         })
 
-        # Apply gradient AND text alignment/bolding
+        # Apply gradient
         styled_table = risky_vendors.style.background_gradient(
             subset=['Reliability Score'], 
             cmap='Reds_r', 
             vmin=50, 
             vmax=100
         )
-        # .set_table_styles([
-        #     {'selector': 'th', 'props': [('text-align', 'center'), ('font-weight', 'bold')]},
-        #     {'selector': 'td', 'props': [('text-align', 'center')]}
-        # ])
 
         st.dataframe(styled_table, use_container_width=True, hide_index=True)
 
@@ -140,7 +141,7 @@ with tab2:
         col2.metric("Pipeline Success Rate", f"{success_rate:.0f}%")
         col3.metric("Total Execution Time", f"{total_time:.2f}s")
 
-        st.progress(success_rate / 100, text=f"{success_rate:,.2f}% success rate")
+        st.progress(min(success_rate / 100, 1.0), text=f"{success_rate:,.2f}% success rate")
         
         st.divider()
         
@@ -166,7 +167,6 @@ with tab2:
         st.subheader("Model Execution Bottlenecks")
         if models_data:
             models_df = pd.DataFrame(models_data).sort_values('Time (s)', ascending=False)
-            # Display bar chart of execution times
             st.bar_chart(models_df, x="Node Name", y="Time (s)")
         else:
             st.info("No model telemetry found.")
@@ -199,7 +199,7 @@ with tab2:
     except FileNotFoundError:
         st.warning("run_results.json not found.")
 
-# footer
+# --- FOOTER ---
 st.divider()
-st.markdown("Built by [Ravi Rajpurohit](https://www.linkedin.com/in/ravi-rajpurohit/) — Feedback: ravirajpurohit414@gmail.com", text_alignment="center")
+st.markdown("Built by [Ravi Rajpurohit](https://www.linkedin.com/in/ravi-rajpurohit/) — Feedback: ravirajpurohit414@gmail.com", help="Data Engineering & Infrastructure", text_alignment="center")
 st.markdown("[LinkedIn](https://www.linkedin.com/in/ravi-rajpurohit/) | [GitHub](https://github.com/ravi-rajpurohit-gh/) | [Medium](https://ravi-rajpurohit.medium.com/)", text_alignment="center")
