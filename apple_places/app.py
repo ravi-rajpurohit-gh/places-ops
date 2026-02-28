@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import os
 import datetime
+import altair as alt
 
 # Get the absolute path of the directory where app.py lives
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -80,30 +81,61 @@ with tab1:
     
     filtered_df = df[df['campus'] == selected_campus]
     
+    st.subheader("Spend by Project")
+    spend_by_project = filtered_df.groupby('project_name')['amount'].sum().reset_index()
+    spend_by_project = spend_by_project.rename(columns={
+        'project_name': 'Project Name', 
+        'amount': 'Amount Spent ($)'
+    })
+    st.bar_chart(spend_by_project, x='Project Name', y='Amount Spent ($)')
+ 
+    # Daily Trend Line Chart
+    st.subheader("Daily Spend Trend")
+    trend_df = filtered_df.groupby('expense_date')['amount'].sum().reset_index()
+    trend_df = trend_df.rename(columns={
+        'expense_date': 'Date', 
+        'amount': 'Daily Spend ($)'
+    })
+    st.line_chart(trend_df, x='Date', y='Daily Spend ($)')
+
     col_a, col_b = st.columns(2)
     
     with col_a:
-        st.subheader("Spend by Project")
-        spend_by_project = filtered_df.groupby('project_name')['amount'].sum().reset_index()
-        spend_by_project = spend_by_project.rename(columns={
-            'project_name': 'Project Name', 
-            'amount': 'Amount Spent ($)'
+        st.subheader("Spend by Category")
+        category_df = filtered_df.groupby('category')['amount'].sum().reset_index()
+        # Rename columns for the UI
+        category_df = category_df.rename(columns={
+            'category': 'Category', 
+            'amount': 'Amount'
         })
-        st.bar_chart(spend_by_project, x='Project Name', y='Amount Spent ($)')
- 
-    with col_b:
-        # Daily Trend Line Chart
-        st.subheader("Daily Spend Trend")
-        trend_df = filtered_df.groupby('expense_date')['amount'].sum().reset_index()
-        trend_df = trend_df.rename(columns={
-            'expense_date': 'Date', 
-            'amount': 'Daily Spend ($)'
-        })
-        st.line_chart(trend_df, x='Date', y='Daily Spend ($)')
+        total_category_spend = category_df['Amount'].sum()
         
-    col_c, _ = st.columns(2)
-    
-    with col_c:
+        # 1. Base Donut Chart
+        base_chart = alt.Chart(category_df).mark_arc(innerRadius=80).encode(
+            theta=alt.Theta(field="Amount", type="quantitative"),
+            color=alt.Color(
+                field="Category", 
+                type="nominal", 
+                legend=alt.Legend(title="Category", orient="left")
+            ),
+            tooltip=['Category', 'Amount']
+        )
+        
+        # 2. Text Chart (Total dollar amount formatted for the center)
+        text_chart = alt.Chart(pd.DataFrame({'total': [f"${total_category_spend:,.0f}"]})).mark_text(
+            size=22, 
+            fontWeight='bold',
+            color='#1d1d1f' # Apple's dark grey text color
+        ).encode(
+            text='total:N'
+        )
+        
+        # 3. Layer them together
+        donut_chart = alt.layer(base_chart, text_chart).properties(height=300)
+        
+        st.altair_chart(donut_chart, use_container_width=True)
+
+    with col_b:
         st.subheader("⚠️ Vendor Risk Assessment")
         reliability_threshold = st.slider("Flag vendors with reliability scores below threshold:", 
                                           min_value=0, max_value=100, value=90,
