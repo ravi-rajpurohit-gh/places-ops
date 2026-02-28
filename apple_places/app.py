@@ -9,19 +9,11 @@ import datetime
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(CURRENT_DIR, 'places_database.duckdb')
 TARGET_PATH = os.path.join(CURRENT_DIR, 'target', 'run_results.json')
+MANIFEST_PATH = os.path.join(CURRENT_DIR, 'target', 'manifest.json')
 
 # 1. Page Configuration
 st.set_page_config(page_title="Places Data Hub", layout="wide")
 st.title("Apple Places: Operations & Data Health")
-
-# --- Hide Streamlit Branding ---
-hide_st_style = """
-            <style>
-            [data-testid="stToolbar"] {visibility: hidden;}
-            footer {visibility: hidden;}
-            </style>
-            """
-# st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -55,7 +47,7 @@ def load_data():
 df = load_data()
 
 # 2. Create the Two Tabs
-tab1, tab2 = st.tabs(["Places Operations", "DBT Pipeline Health"])
+tab1, tab2, tab3 = st.tabs(["Places Operations", "DBT Pipeline Health", "Data Dictionary"])
 
 # ==========================================
 # TAB 1: The Business View (For Construction PMs)
@@ -220,7 +212,48 @@ with tab2:
     except FileNotFoundError:
         st.warning("run_results.json not found.")
 
+# ==========================================
+# TAB 3: Data Dictionary - Dynamically generated from dbt
+# ==========================================
+with tab3:
+    st.header("Data Dictionary")
+    st.write("Automatically generated from dbt `manifest.json`. This ensures documentation to be perfectly in sync with codebase.")
+    
+    try:
+        with open(MANIFEST_PATH, 'r') as f:
+            manifest = json.load(f)
+            
+        nodes = manifest.get('nodes', {})
+        # Filter for actual models, ignoring tests or seeds
+        models = {k: v for k, v in nodes.items() if v.get('resource_type') == 'model'}
+        
+        for node_id, model_data in models.items():
+            model_name = model_data.get('name', 'Unknown')
+            model_desc = model_data.get('description', 'No description provided.')
+            
+            st.subheader(f"`{model_name}`")
+            st.write(model_desc)
+            
+            # Extract column descriptions if they exist
+            columns = model_data.get('columns', {})
+            col_list = []
+            for col_name, col_details in columns.items():
+                desc = col_details.get('description', '')
+                if desc:  # Only show columns we explicitly documented
+                    col_list.append({"Column Name": col_name, "Description": desc})
+            
+            if col_list:
+                st.dataframe(pd.DataFrame(col_list), hide_index=True, use_container_width=True)
+            else:
+                st.caption("No column-level documentation available for this model.")
+            
+            st.markdown("\n")
+            
+    except FileNotFoundError:
+        st.warning("Data dictionary unavailable. Run `dbt build` locally.")
+
+
 # --- FOOTER ---
 st.divider()
-st.markdown("Built by [Ravi Rajpurohit](https://www.linkedin.com/in/ravi-rajpurohit/) — Feedback: ravirajpurohit414@gmail.com", help="Data Engineering & Infrastructure", text_alignment="center")
+st.markdown("Built by [Ravi Rajpurohit](http://linktr.ee/hey_ravi) — Feedback: ravirajpurohit414@gmail.com", help="Data Engineering & Infrastructure", text_alignment="center")
 st.markdown("[LinkedIn](https://www.linkedin.com/in/ravi-rajpurohit/) | [GitHub](https://github.com/ravi-rajpurohit-gh/) | [Medium](https://ravi-rajpurohit.medium.com/)", text_alignment="center")
