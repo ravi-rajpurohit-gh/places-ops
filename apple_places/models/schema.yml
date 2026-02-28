@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: stg_projects
+    description: "Staging model for Apple Places campus facility projects."
+    columns:
+      - name: project_id
+        description: "Primary key for projects."
+        tests:
+          - unique
+          - not_null
+      - name: project_name
+        description: "Name of the facility upgrade or construction project."
+      - name: status
+        description: "Current status of the construction project."
+        tests:
+          - accepted_values:
+              values: ["In Progress", "Completed", "Delayed"]
+
+  - name: stg_vendors
+    description: "Contractor and vendor reliability dimension."
+    columns:
+      - name: vendor_id
+        description: "Primary key for the vendor."
+        tests:
+          - unique
+          - not_null
+      - name: vendor_name
+        description: "The name of the contracted vendor."
+      - name: reliability_score
+        description: "Internal scoring metric (0-100) assessing vendor performance."
+
+  - name: stg_expenses
+    description: "Raw daily capital expenditure records tracking individual vendor payments."
+    columns:
+      - name: expense_id
+        description: "Primary key for the expense line item."
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        description: "Dollar amount of the logged expense."
+      - name: category
+        description: "Type of expense (e.g., Materials, Labor, Permits)."
+
+  - name: fct_project_spend
+    description: "Core fact table joining daily expenses with project and vendor dimensions for downstream dashboarding."
+    columns:
+      - name: expense_id
+        description: "Primary key."
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        description: "Capital spent on this specific expense line."
+        tests:
+          - not_null
+      - name: campus
+        description: "The specific Apple campus where the project is located."
