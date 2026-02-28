@@ -3,6 +3,7 @@ import duckdb
 import pandas as pd
 import json
 import os
+import datetime
 
 # Get the absolute path of the directory where app.py lives
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,6 +13,15 @@ TARGET_PATH = os.path.join(CURRENT_DIR, 'target', 'run_results.json')
 # 1. Page Configuration
 st.set_page_config(page_title="Places Data Hub", layout="wide")
 st.title("Apple Places: Operations & Data Health")
+
+# --- Hide Streamlit Branding ---
+hide_st_style = """
+            <style>
+            [data-testid="stToolbar"] {visibility: hidden;}
+            footer {visibility: hidden;}
+            </style>
+            """
+# st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -23,6 +33,15 @@ with st.sidebar:
     **Language:** Python  
     """)
     st.caption("Built as a rapid prototype for the Apple Places data ecosystem.")
+    st.divider()
+    # Dynamic Data Freshness Timestamp
+    if os.path.exists(TARGET_PATH):
+        mod_time = os.path.getmtime(TARGET_PATH)
+        timestamp = datetime.datetime.fromtimestamp(mod_time).strftime('%b %d, %Y - %I:%M %p')
+    else:
+        timestamp = "Unknown"
+        
+    st.caption(f"🔄 **Data Freshness:** {timestamp}")
     st.divider()
     st.markdown("**Goal:** Demonstrate end-to-end modeling of complex business data (construction/vendors) and dbt artifact monitoring.")
 
@@ -55,8 +74,8 @@ with tab1:
     # Display KPIs
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Allocated Budget", f"${total_budget:,.0f}")
-    col2.metric("Total Capital Spent", f"${total_spend:,.0f}")
-    col3.metric("Remaining Budget", f"${total_remaining:,.0f}")
+    col2.metric("Total Capital Spent", f"${total_spend:,.0f}", delta="Expected Burn Rate", delta_color="off")
+    col3.metric("Remaining Budget", f"${total_remaining:,.0f}", delta=f"{(100 - percentage_spend):.1f}% Buffer", delta_color="normal")
     
     # Cap the progress bar at 1.0 to prevent Streamlit errors if spend exceeds budget
     st.progress(min(percentage_spend / 100, 1.0), text=f"{percentage_spend:,.2f}% of budget consumed")
@@ -94,7 +113,9 @@ with tab1:
     
     with col_c:
         st.subheader("⚠️ Vendor Risk Assessment")
-        reliability_threshold = st.number_input("Flagging vendors with reliability scores below threshold:", min_value=1, max_value=100, value=90)
+        reliability_threshold = st.slider("Flag vendors with reliability scores below threshold:", 
+                                          min_value=0, max_value=100, value=90,
+                                          step=1, help="Adjust the threshold to instantly filter out high-risk contractors.")
         
         # Find risky vendors for this specific campus
         risk_df = filtered_df[['vendor_name', 'reliability_score']].drop_duplicates()
