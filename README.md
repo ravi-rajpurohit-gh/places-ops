@@ -29,7 +29,7 @@ I designed this dashboard to serve two very different audiences simultaneously:
 ## 💻 Run It Locally
 
 ```bash
-git clone [https://github.com/ravi-rajpurohit-gh/apple_places.git](https://github.com/ravi-rajpurohit-gh/apple_places.git)
+git clone https://github.com/ravi-rajpurohit-gh/apple_places.git
 cd apple_places
 pip install -r requirements.txt
 streamlit run app.py
