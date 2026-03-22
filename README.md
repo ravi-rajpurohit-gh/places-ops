@@ -6,7 +6,7 @@
 
 > A lightweight, end-to-end data pipeline and monitoring dashboard built to handle complex business domains (construction, vendors, budgets) while maintaining strict engineering standards.
 
-**🚀 Live Demo:** [Live App](https://places-ops.streamlit.app/){:target="_blank"}
+**🚀 Live Demo:** [Live App](https://places-ops.streamlit.app/)
 
 ---
 
