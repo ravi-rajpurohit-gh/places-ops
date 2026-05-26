@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_projects
-    description: "Staging model for Apple Places campus facility projects."
+    description: "Staging model for construction and corporate operations projects."
     columns:
       - name: project_id
         description: "Primary key for projects."
@@ -56,4 +56,4 @@ models:
         tests:
           - not_null
       - name: campus
-        description: "The specific Apple campus where the project is located."
+        description: "The operating region or business area where the project is located."

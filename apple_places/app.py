@@ -1,291 +1,683 @@
-import streamlit as st
-import duckdb
-import pandas as pd
+from __future__ import annotations
+
+import datetime
 import json
 import os
-import datetime
+import time
+from typing import Optional
+
 import altair as alt
+import duckdb
+import pandas as pd
+import streamlit as st
 
-# Get the absolute path of the directory where app.py lives
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(CURRENT_DIR, 'places_database.duckdb')
-TARGET_PATH = os.path.join(CURRENT_DIR, 'target', 'run_results.json')
-MANIFEST_PATH = os.path.join(CURRENT_DIR, 'target', 'manifest.json')
+DB_PATH = os.path.join(CURRENT_DIR, "places_database.duckdb")
+TARGET_PATH = os.path.join(CURRENT_DIR, "target", "run_results.json")
+MANIFEST_PATH = os.path.join(CURRENT_DIR, "target", "manifest.json")
 
-# 1. Page Configuration
-st.set_page_config(page_title="Places Data Hub", layout="wide")
-st.title("Apple Places: Operations & Data Health")
+PALETTE = {
+    "bg": "#070807",
+    "panel": "#111412",
+    "border": "#2a302d",
+    "text": "#f5f4ef",
+    "muted": "#9aa39d",
+    "dim": "#6f7772",
+    "green": "#34d399",
+    "blue": "#60a5fa",
+    "yellow": "#facc15",
+    "red": "#f87171",
+    "purple": "#a78bfa",
+}
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.sidebar.title("Architecture Stack")
-    st.markdown("""
-    **Warehouse:** DuckDB (Local)  
-    **Transformation:** dbt-core (1 Mart, 3 Staging)  
-    **UI/UX:** Streamlit  
-    **Language:** Python  
-    """)
-    st.caption("Built as a rapid prototype for the Apple Places data ecosystem.")
-    st.divider()
-    # Dynamic Data Freshness Timestamp
-    if os.path.exists(TARGET_PATH):
-        mod_time = os.path.getmtime(TARGET_PATH)
-        timestamp = datetime.datetime.fromtimestamp(mod_time).strftime('%b %d, %Y - %I:%M %p')
-    else:
-        timestamp = "Unknown"
-        
-    st.caption(f"🔄 **Data Freshness:** {timestamp}")
-    st.divider()
-    st.markdown("**Goal:** Demonstrate end-to-end modeling of complex business data (construction/vendors) and dbt artifact monitoring.")
 
-# --- DATA LOADING (Cached for Performance) ---
+CUSTOM_CSS = f"""
+<style>
+.stApp {{
+    background:
+        radial-gradient(circle at 82% -12%, rgba(52,211,153,0.11), transparent 34rem),
+        linear-gradient(180deg, #080a09 0%, #070807 48%, #070807 100%);
+    color: {PALETTE["text"]};
+}}
+
+.block-container {{
+    max-width: 1440px;
+    padding-top: 1.3rem;
+    padding-bottom: 3rem;
+}}
+
+[data-testid="stSidebar"] {{
+    background: #090b0a;
+    border-right: 1px solid {PALETTE["border"]};
+}}
+
+h1, h2, h3 {{
+    letter-spacing: 0;
+}}
+
+h2 {{
+    color: {PALETTE["muted"]} !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase;
+}}
+
+[data-testid="stTabs"] [role="tab"] {{
+    color: {PALETTE["muted"]};
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+}}
+
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+    color: {PALETTE["text"]};
+    border-bottom-color: {PALETTE["green"]};
+}}
+
+.po-header {{
+    border-bottom: 1px solid {PALETTE["border"]};
+    padding: 0.35rem 0 1.1rem;
+    margin-bottom: 1.1rem;
+}}
+
+.po-kicker {{
+    color: {PALETTE["green"]};
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}}
+
+.po-title {{
+    color: {PALETTE["text"]};
+    font-size: 2.05rem;
+    line-height: 1.05;
+    font-weight: 800;
+    margin-top: 0.25rem;
+}}
+
+.po-subtitle {{
+    color: {PALETTE["muted"]};
+    max-width: 860px;
+    line-height: 1.55;
+    margin-top: 0.45rem;
+}}
+
+.panel {{
+    border: 1px solid {PALETTE["border"]};
+    border-radius: 8px;
+    background: rgba(17,20,18,0.78);
+    padding: 1rem;
+}}
+
+.panel-title {{
+    display: inline-block;
+    color: {PALETTE["green"]};
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    margin-bottom: 0.65rem;
+}}
+
+.insight-copy {{
+    color: {PALETTE["text"]};
+    font-size: 0.98rem;
+    line-height: 1.65;
+}}
+
+.caption-mono {{
+    color: {PALETTE["dim"]};
+    font-family: monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    margin-top: 0.7rem;
+}}
+
+.sidebar-footer {{
+    border-top: 1px solid {PALETTE["border"]};
+    margin-top: 1.25rem;
+    padding-top: 0.95rem;
+    color: {PALETTE["muted"]};
+    font-size: 0.76rem;
+    line-height: 1.6;
+}}
+
+.sidebar-footer strong {{
+    color: {PALETTE["text"]};
+}}
+</style>
+"""
+
+
+def money(value: float) -> str:
+    return f"${value:,.0f}"
+
+
+def option_label(value: str) -> str:
+    return str(value).replace("_", " ").replace("-", " ").title()
+
+
+def estimate_tokens(text: str) -> int:
+    return max(1, round(len(text) / 4))
+
+
+def style_chart(chart: alt.Chart, height: int = 300) -> alt.Chart:
+    return (
+        chart.properties(height=height)
+        .configure_view(strokeWidth=0)
+        .configure_axis(
+            gridColor=PALETTE["border"],
+            domainColor=PALETTE["border"],
+            tickColor=PALETTE["border"],
+            labelColor=PALETTE["muted"],
+            titleColor=PALETTE["muted"],
+            labelAngle=-30,
+            labelLimit=150,
+        )
+        .configure_legend(labelColor=PALETTE["muted"], titleColor=PALETTE["muted"])
+        .configure(background="transparent")
+    )
+
+
 @st.cache_data
-def load_data():
-    # Using a context manager ensures the connection safely closes
+def load_data() -> pd.DataFrame:
     with duckdb.connect(DB_PATH, read_only=True) as conn:
-        return conn.execute("SELECT * FROM main.fct_project_spend").df()
+        return conn.execute("select * from main.fct_project_spend").df()
+
+
+@st.cache_data
+def load_run_results() -> dict:
+    if not os.path.exists(TARGET_PATH):
+        return {"results": []}
+    with open(TARGET_PATH, "r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+@st.cache_data
+def load_manifest() -> dict:
+    if not os.path.exists(MANIFEST_PATH):
+        return {"nodes": {}}
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def project_summary(data: pd.DataFrame) -> pd.DataFrame:
+    return (
+        data.groupby(["project_name", "campus", "status", "budget_allocated"], as_index=False)
+        .agg(
+            total_spend=("amount", "sum"),
+            vendor_count=("vendor_name", "nunique"),
+            avg_vendor_reliability=("reliability_score", "mean"),
+            last_expense_date=("expense_date", "max"),
+        )
+        .assign(
+            budget_variance=lambda d: d["total_spend"] - d["budget_allocated"],
+            budget_used_pct=lambda d: d["total_spend"] * 100 / d["budget_allocated"],
+        )
+        .sort_values("budget_variance", ascending=False)
+    )
+
+
+def portfolio_metrics(data: pd.DataFrame) -> dict[str, float]:
+    projects = project_summary(data)
+    total_budget = projects["budget_allocated"].sum()
+    total_spend = data["amount"].sum()
+    delayed = projects[projects["status"] == "Delayed"]
+    risky_vendors = data[["vendor_name", "reliability_score"]].drop_duplicates()
+    risky_vendors = risky_vendors[risky_vendors["reliability_score"] < 85]
+    return {
+        "project_count": float(len(projects)),
+        "total_budget": float(total_budget),
+        "total_spend": float(total_spend),
+        "budget_variance": float(total_spend - total_budget),
+        "budget_used_pct": float(total_spend * 100 / total_budget) if total_budget else 0,
+        "delayed_exposure": float(delayed["budget_allocated"].sum()),
+        "risky_vendor_count": float(len(risky_vendors)),
+        "avg_vendor_reliability": float(data[["vendor_name", "reliability_score"]].drop_duplicates()["reliability_score"].mean()),
+    }
+
+
+def dbt_health_summary() -> tuple[pd.DataFrame, dict[str, float]]:
+    results = load_run_results().get("results", [])
+    rows = []
+    for result in results:
+        unique_id = result.get("unique_id", "")
+        rows.append(
+            {
+                "node_type": unique_id.split(".")[0] if unique_id else "unknown",
+                "node_name": unique_id.split(".")[-1] if unique_id else "unknown",
+                "status": result.get("status", "unknown").upper(),
+                "execution_time_s": round(result.get("execution_time", 0), 3),
+            }
+        )
+    telemetry = pd.DataFrame(rows)
+    total_nodes = len(telemetry)
+    successful = int(telemetry["status"].isin(["SUCCESS", "PASS"]).sum()) if total_nodes else 0
+    metrics = {
+        "total_nodes": float(total_nodes),
+        "success_rate": float(successful * 100 / total_nodes) if total_nodes else 0,
+        "total_time": float(telemetry["execution_time_s"].sum()) if total_nodes else 0,
+    }
+    return telemetry, metrics
+
+
+def governed_answer(prompt: str, data: pd.DataFrame, filters: dict[str, str]) -> tuple[str, dict[str, object]]:
+    started = time.perf_counter()
+    question = prompt.lower()
+    metrics = portfolio_metrics(data)
+    projects = project_summary(data)
+    selected_tool = "summarize_portfolio"
+    confidence = "medium"
+
+    if any(term in question for term in ["vendor", "contractor", "reliability", "risk"]):
+        selected_tool = "summarize_vendor_risk"
+        confidence = "high"
+        vendors = data[["vendor_name", "reliability_score"]].drop_duplicates().sort_values("reliability_score")
+        weakest = vendors.iloc[0]
+        answer = (
+            f"The current filter has {int(metrics['risky_vendor_count'])} vendors below the 85 reliability threshold. "
+            f"The lowest-scoring vendor is {weakest['vendor_name']} at {weakest['reliability_score']:.0f}. "
+            "This is a practical review queue for procurement, project operations, and finance controls."
+        )
+        rows_considered = int(len(vendors))
+    elif any(term in question for term in ["delay", "delayed", "exposure", "project risk"]):
+        selected_tool = "summarize_delayed_project_exposure"
+        confidence = "high"
+        delayed = projects[projects["status"] == "Delayed"].sort_values("budget_allocated", ascending=False)
+        top = delayed.iloc[0] if not delayed.empty else None
+        top_text = f" The largest delayed project is {top['project_name']} at {money(top['budget_allocated'])} budget exposure." if top is not None else ""
+        answer = f"Delayed-project exposure is {money(metrics['delayed_exposure'])} across the current portfolio.{top_text}"
+        rows_considered = int(len(projects))
+    elif any(term in question for term in ["category", "materials", "labor", "permits", "equipment"]):
+        selected_tool = "summarize_cost_category"
+        confidence = "high"
+        categories = data.groupby("category", as_index=False)["amount"].sum().sort_values("amount", ascending=False)
+        top = categories.iloc[0]
+        answer = (
+            f"The largest cost category is {option_label(top['category'])} at {money(top['amount'])}. "
+            "This helps prioritize cost optimization conversations by spend driver instead of by anecdote."
+        )
+        rows_considered = int(len(data))
+    elif any(term in question for term in ["pipeline", "dbt", "quality", "test", "freshness", "model"]):
+        selected_tool = "summarize_pipeline_health"
+        confidence = "high"
+        _, health = dbt_health_summary()
+        answer = (
+            f"The latest dbt artifact shows {int(health['total_nodes'])} executed nodes, "
+            f"{health['success_rate']:.0f}% success rate, and {health['total_time']:.2f}s total execution time. "
+            "That keeps model reliability visible beside business metrics."
+        )
+        rows_considered = int(health["total_nodes"])
+    elif any(term in question for term in ["region", "campus", "division", "area"]):
+        selected_tool = "summarize_region_performance"
+        confidence = "high"
+        regions = data.groupby("campus", as_index=False)["amount"].sum().sort_values("amount", ascending=False)
+        top = regions.iloc[0]
+        answer = f"{option_label(top['campus'])} has the highest spend in the current data at {money(top['amount'])}."
+        rows_considered = int(len(regions))
+    else:
+        answer = (
+            f"The current portfolio includes {int(metrics['project_count'])} projects, {money(metrics['total_spend'])} in spend, "
+            f"{money(metrics['total_budget'])} in allocated budget, and {money(metrics['delayed_exposure'])} in delayed-project exposure. "
+            f"Average vendor reliability is {metrics['avg_vendor_reliability']:.1f}."
+        )
+        rows_considered = int(len(data))
+
+    latency = time.perf_counter() - started
+    metadata = {
+        "mode": "governed_function_router",
+        "selected_tool": selected_tool,
+        "confidence": confidence,
+        "api_calls": 0,
+        "api_cost_usd": 0.0,
+        "prompt_tokens_estimated": estimate_tokens(prompt),
+        "completion_tokens_estimated": estimate_tokens(answer),
+        "total_tokens_estimated": estimate_tokens(prompt) + estimate_tokens(answer),
+        "rows_considered": rows_considered,
+        "latency_s": round(latency, 3),
+        "filters": filters,
+    }
+    return answer, metadata
+
+
+def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Chart]:
+    if selected_tool in {"summarize_portfolio", "summarize_region_performance"}:
+        regional = data.groupby("campus", as_index=False)["amount"].sum()
+        regional["region"] = regional["campus"].map(option_label)
+        return alt.Chart(regional).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+            x=alt.X("region:N", title=None, sort="-y"),
+            y=alt.Y("amount:Q", title="Spend"),
+            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["green"], PALETTE["blue"], PALETTE["purple"], PALETTE["yellow"]])),
+            tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
+        )
+
+    if selected_tool == "summarize_vendor_risk":
+        vendors = data[["vendor_name", "reliability_score"]].drop_duplicates().sort_values("reliability_score").head(10)
+        return alt.Chart(vendors).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+            x=alt.X("vendor_name:N", title=None, sort="y"),
+            y=alt.Y("reliability_score:Q", title="Reliability Score"),
+            color=alt.Color("reliability_score:Q", legend=None, scale=alt.Scale(range=[PALETTE["red"], PALETTE["yellow"], PALETTE["green"]])),
+            tooltip=[alt.Tooltip("vendor_name:N", title="Vendor"), alt.Tooltip("reliability_score:Q", title="Reliability", format=".0f")],
+        )
+
+    if selected_tool == "summarize_delayed_project_exposure":
+        projects = project_summary(data)
+        delayed = projects[projects["status"] == "Delayed"].sort_values("budget_allocated", ascending=False).head(10)
+        return alt.Chart(delayed).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+            x=alt.X("project_name:N", title=None, sort="-y"),
+            y=alt.Y("budget_allocated:Q", title="Delayed Budget Exposure"),
+            color=alt.value(PALETTE["red"]),
+            tooltip=[
+                alt.Tooltip("project_name:N", title="Project"),
+                alt.Tooltip("budget_allocated:Q", title="Budget Exposure", format="$,.0f"),
+                alt.Tooltip("campus:N", title="Region"),
+            ],
+        )
+
+    if selected_tool == "summarize_cost_category":
+        categories = data.groupby("category", as_index=False)["amount"].sum()
+        categories["category_label"] = categories["category"].map(option_label)
+        return alt.Chart(categories).mark_arc(innerRadius=70).encode(
+            theta=alt.Theta("amount:Q"),
+            color=alt.Color("category_label:N", title="Category"),
+            tooltip=[alt.Tooltip("category_label:N", title="Category"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
+        )
+
+    if selected_tool == "summarize_pipeline_health":
+        telemetry, _ = dbt_health_summary()
+        if telemetry.empty:
+            return None
+        return alt.Chart(telemetry).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+            x=alt.X("node_name:N", title=None, sort="-y"),
+            y=alt.Y("execution_time_s:Q", title="Execution Time (s)"),
+            color=alt.Color("node_type:N", title="Node Type"),
+            tooltip=[
+                alt.Tooltip("node_name:N", title="Node"),
+                alt.Tooltip("node_type:N", title="Type"),
+                alt.Tooltip("status:N", title="Status"),
+                alt.Tooltip("execution_time_s:Q", title="Execution Time", format=".3f"),
+            ],
+        )
+
+    return None
+
+
+def render_trace(metadata: dict[str, object]) -> None:
+    with st.expander("Analysis trace", expanded=False):
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Tool", option_label(str(metadata["selected_tool"])))
+        c2.metric("Estimated tokens", f"{metadata['total_tokens_estimated']:,}")
+        c3.metric("Rows considered", f"{metadata['rows_considered']:,}")
+        c4.metric("Latency", f"{metadata['latency_s']:.3f}s")
+        c5, c6 = st.columns(2)
+        c5.metric("API calls", f"{metadata['api_calls']}")
+        c6.metric("API cost", f"${metadata['api_cost_usd']:.2f}")
+        st.json(metadata)
+
+
+def render_assistant_turn(message: dict[str, object], data: pd.DataFrame) -> None:
+    content = str(message["content"]).replace("$", "\\$")
+    if message["role"] == "user":
+        _, user_col = st.columns([0.28, 0.72])
+        with user_col:
+            with st.container(border=True):
+                st.caption("You")
+                st.markdown(content)
+        return
+
+    usage = message.get("usage")
+    with st.container(border=True):
+        st.caption("PlacesOps Analyst · Governed visual analysis")
+        st.markdown(content)
+        if isinstance(usage, dict):
+            chart = assistant_visual(str(usage["selected_tool"]), data)
+            if chart is not None:
+                st.altair_chart(style_chart(chart, height=300), use_container_width=True)
+            render_trace(usage)
+
+
+st.set_page_config(page_title="PlacesOps", layout="wide", initial_sidebar_state="expanded")
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 df = load_data()
+all_regions = ["All"] + sorted(df["campus"].dropna().unique().tolist())
+all_statuses = ["All"] + sorted(df["status"].dropna().unique().tolist())
 
-# 2. Create the Two Tabs
-tab1, tab2, tab3 = st.tabs(["Places Operations", "DBT Pipeline Health", "Data Dictionary"])
+with st.sidebar:
+    st.markdown("## PlacesOps")
+    st.caption("Construction, vendor, budget, and corporate operations analytics.")
+    st.markdown("## Filters")
+    selected_region = st.selectbox("Region", all_regions, format_func=option_label)
+    selected_status = st.selectbox("Project status", all_statuses, format_func=option_label)
+    st.markdown("## Production Mirror")
+    st.caption("AWS S3/Glue · Snowflake · dbt · Qlik/Power BI · CloudWatch · governed AI")
+    if os.path.exists(TARGET_PATH):
+        mod_time = os.path.getmtime(TARGET_PATH)
+        timestamp = datetime.datetime.fromtimestamp(mod_time).strftime("%b %d, %Y - %I:%M %p")
+    else:
+        timestamp = "Unknown"
+    st.caption(f"Data freshness: {timestamp}")
+    st.markdown(
+        """
+<div class="sidebar-footer">
+  <strong>Built by Ravi Rajpurohit</strong><br>
+  Data Engineering · Corporate Analytics · Governed AI
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
-# ==========================================
-# TAB 1: The Business View (For Construction PMs)
-# ==========================================
-with tab1:
-    st.header("Campus Construction & Budget Tracking")
-    
-    # Calculate High-Level KPIs
-    # Drop duplicates to avoid overcounting budgets that appear on multiple expense rows
-    project_budgets = df[['project_name', 'budget_allocated']].drop_duplicates()
-    total_budget = project_budgets['budget_allocated'].sum()
-    total_spend = df['amount'].sum()
-    total_remaining = total_budget - total_spend
-    percentage_spend = 100 * total_spend / total_budget if total_budget > 0 else 0
-    
-    # Display KPIs
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Allocated Budget", f"${total_budget:,.0f}")
-    col2.metric("Total Capital Spent", f"${total_spend:,.0f}", delta="Expected Burn Rate", delta_color="off")
-    col3.metric("Remaining Budget", f"${total_remaining:,.0f}", delta=f"{(100 - percentage_spend):.1f}% Buffer", delta_color="normal")
-    
-    # Cap the progress bar at 1.0 to prevent Streamlit errors if spend exceeds budget
-    st.progress(min(percentage_spend / 100, 1.0), text=f"{percentage_spend:,.2f}% of budget consumed")
-    
-    st.divider()
-    
-    # Interactive Campus Filter
-    campuses = df['campus'].unique()
-    selected_campus = st.selectbox("Select a Campus to drill down:", campuses)
-    
-    filtered_df = df[df['campus'] == selected_campus]
-    
-    st.subheader("Spend by Project")
-    spend_by_project = filtered_df.groupby('project_name')['amount'].sum().reset_index()
-    spend_by_project = spend_by_project.rename(columns={
-        'project_name': 'Project Name', 
-        'amount': 'Amount Spent ($)'
-    })
-    st.bar_chart(spend_by_project, x='Project Name', y='Amount Spent ($)')
- 
-    # Daily Trend Line Chart
-    st.subheader("Daily Spend Trend")
-    trend_df = filtered_df.groupby('expense_date')['amount'].sum().reset_index()
-    trend_df = trend_df.rename(columns={
-        'expense_date': 'Date', 
-        'amount': 'Daily Spend ($)'
-    })
-    st.line_chart(trend_df, x='Date', y='Daily Spend ($)')
+filtered_df = df.copy()
+if selected_region != "All":
+    filtered_df = filtered_df[filtered_df["campus"] == selected_region]
+if selected_status != "All":
+    filtered_df = filtered_df[filtered_df["status"] == selected_status]
 
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        st.subheader("Spend by Category")
-        category_df = filtered_df.groupby('category')['amount'].sum().reset_index()
-        # Rename columns for the UI
-        category_df = category_df.rename(columns={
-            'category': 'Category', 
-            'amount': 'Amount'
-        })
-        total_category_spend = category_df['Amount'].sum()
-        
-        # 1. Base Donut Chart
-        base_chart = alt.Chart(category_df).mark_arc(innerRadius=80).encode(
-            theta=alt.Theta(field="Amount", type="quantitative"),
-            color=alt.Color(
-                field="Category", 
-                type="nominal", 
-                legend=alt.Legend(title="Category", orient="left")
+metrics = portfolio_metrics(filtered_df)
+projects = project_summary(filtered_df)
+
+st.markdown(
+    """
+<div class="po-header">
+  <div class="po-kicker">PlacesOps Data Hub</div>
+  <div class="po-title">Construction & Corporate Analytics Command Center</div>
+  <div class="po-subtitle">
+    Budget performance, delayed-project exposure, vendor reliability, cost drivers, dbt health, and governed
+    natural-language analysis over trusted operational marts.
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+tab_ops, tab_cost, tab_health, tab_dictionary, tab_assistant = st.tabs(
+    ["Executive Ops", "Cost & Risk", "Platform Health", "Dictionary", "Assistant"]
+)
+
+with tab_ops:
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Projects", f"{int(metrics['project_count']):,}")
+    c2.metric("Total Spend", money(metrics["total_spend"]))
+    c3.metric("Budget Variance", money(metrics["budget_variance"]))
+    c4.metric("Delayed Exposure", money(metrics["delayed_exposure"]))
+    st.progress(min(metrics["budget_used_pct"] / 100, 1.0), text=f"{metrics['budget_used_pct']:.1f}% of allocated budget consumed")
+
+    left, right = st.columns([1.15, 0.85])
+    with left:
+        st.markdown("## Spend By Region")
+        region_spend = filtered_df.groupby("campus", as_index=False)["amount"].sum()
+        region_spend["region"] = region_spend["campus"].map(option_label)
+        chart = alt.Chart(region_spend).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+            x=alt.X("region:N", title=None, sort="-y"),
+            y=alt.Y("amount:Q", title="Spend"),
+            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["green"], PALETTE["blue"], PALETTE["purple"], PALETTE["yellow"]])),
+            tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
+        )
+        st.altair_chart(style_chart(chart, height=320), use_container_width=True)
+    with right:
+        delayed_count = int((projects["status"] == "Delayed").sum())
+        insight = (
+            f"The current portfolio has {int(metrics['project_count'])} projects and {money(metrics['delayed_exposure'])} "
+            f"in delayed-project exposure across {delayed_count} delayed projects. Budget variance is {money(metrics['budget_variance'])}, "
+            "so the highest-value review path is delayed work, high-spend categories, and low-reliability vendors."
+        )
+        st.markdown(
+            f"""
+<div class="panel">
+  <div class="panel-title">Governed Executive Insight</div>
+  <div class="insight-copy">{insight}</div>
+  <div class="caption-mono">Derived from fct_project_spend and current filters.</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("## Project Budget Variance")
+    variance_chart = alt.Chart(projects.head(12)).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+        x=alt.X("project_name:N", title=None, sort="-y"),
+        y=alt.Y("budget_variance:Q", title="Spend Minus Budget"),
+        color=alt.Color("budget_variance:Q", legend=None, scale=alt.Scale(range=[PALETTE["green"], PALETTE["yellow"], PALETTE["red"]])),
+        tooltip=[
+            alt.Tooltip("project_name:N", title="Project"),
+            alt.Tooltip("campus:N", title="Region"),
+            alt.Tooltip("status:N", title="Status"),
+            alt.Tooltip("budget_variance:Q", title="Budget Variance", format="$,.0f"),
+        ],
+    )
+    st.altair_chart(style_chart(variance_chart, height=330), use_container_width=True)
+
+with tab_cost:
+    left, right = st.columns(2)
+    with left:
+        st.markdown("## Cost By Category")
+        categories = filtered_df.groupby("category", as_index=False)["amount"].sum()
+        categories["category_label"] = categories["category"].map(option_label)
+        category_chart = alt.Chart(categories).mark_arc(innerRadius=78).encode(
+            theta=alt.Theta("amount:Q"),
+            color=alt.Color("category_label:N", title="Category"),
+            tooltip=[alt.Tooltip("category_label:N", title="Category"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
+        )
+        st.altair_chart(style_chart(category_chart, height=330), use_container_width=True)
+    with right:
+        st.markdown("## Vendor Reliability Risk")
+        threshold = st.slider("Reliability threshold", min_value=70, max_value=100, value=85, step=1)
+        vendors = filtered_df[["vendor_name", "reliability_score"]].drop_duplicates()
+        risky_vendors = vendors[vendors["reliability_score"] < threshold].sort_values("reliability_score")
+        st.dataframe(
+            risky_vendors.rename(columns={"vendor_name": "Vendor", "reliability_score": "Reliability Score"}),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    st.markdown("## Daily Spend Trend")
+    trend = filtered_df.groupby("expense_date", as_index=False)["amount"].sum()
+    trend_chart = alt.Chart(trend).mark_line(point=True, strokeWidth=2.5).encode(
+        x=alt.X("expense_date:T", title="Date"),
+        y=alt.Y("amount:Q", title="Daily Spend"),
+        color=alt.value(PALETTE["green"]),
+        tooltip=[alt.Tooltip("expense_date:T", title="Date"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
+    )
+    st.altair_chart(style_chart(trend_chart, height=310), use_container_width=True)
+
+with tab_health:
+    telemetry, health = dbt_health_summary()
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Nodes Executed", f"{int(health['total_nodes']):,}")
+    c2.metric("Pipeline Success Rate", f"{health['success_rate']:.0f}%")
+    c3.metric("Total Runtime", f"{health['total_time']:.2f}s")
+    st.progress(min(health["success_rate"] / 100, 1.0), text=f"{health['success_rate']:.1f}% dbt success rate")
+
+    if telemetry.empty:
+        st.warning("dbt run_results.json not found. Run dbt build locally to refresh pipeline telemetry.")
+    else:
+        st.markdown("## Model And Test Telemetry")
+        st.dataframe(
+            telemetry.rename(
+                columns={
+                    "node_type": "Node Type",
+                    "node_name": "Node Name",
+                    "status": "Status",
+                    "execution_time_s": "Execution Time (s)",
+                }
             ),
-            tooltip=['Category', 'Amount']
+            use_container_width=True,
+            hide_index=True,
         )
-        
-        # 2. Text Chart (Total dollar amount formatted for the center)
-        text_chart = alt.Chart(pd.DataFrame({'total': [f"${total_category_spend:,.0f}"]})).mark_text(
-            size=22, 
-            fontWeight='bold',
-            color='#1d1d1f' # Apple's dark grey text color
-        ).encode(
-            text='total:N'
-        )
-        
-        # 3. Layer them together
-        donut_chart = alt.layer(base_chart, text_chart).properties(height=300)
-        
-        st.altair_chart(donut_chart, use_container_width=True)
+        st.markdown("## Execution Bottlenecks")
+        st.altair_chart(style_chart(assistant_visual("summarize_pipeline_health", filtered_df), height=320), use_container_width=True)
 
-    with col_b:
-        st.subheader("⚠️ Vendor Risk Assessment")
-        reliability_threshold = st.slider("Flag vendors with reliability scores below threshold:", 
-                                          min_value=0, max_value=100, value=90,
-                                          step=1, help="Adjust the threshold to instantly filter out high-risk contractors.")
-        
-        # Find risky vendors for this specific campus
-        risk_df = filtered_df[['vendor_name', 'reliability_score']].drop_duplicates()
-        risky_vendors = risk_df[risk_df['reliability_score'] < reliability_threshold].sort_values('reliability_score')
-        
-        # Rename columns for the UI
-        risky_vendors = risky_vendors.rename(columns={
-            'vendor_name': 'Vendor Name', 
-            'reliability_score': 'Reliability Score'
-        })
-
-        # Apply gradient
-        styled_table = risky_vendors.style.background_gradient(
-            subset=['Reliability Score'], 
-            cmap='Reds_r', 
-            vmin=50, 
-            vmax=100
-        )
-
-        st.dataframe(styled_table, use_container_width=True, hide_index=True)
-
-# ==========================================
-# TAB 2: The Engineering View
-# ==========================================
-with tab2:
-    st.header("DBT Pipeline Health & Telemetry")
-    st.write("Monitoring execution telemetry to optimize the DAG and ensure data reliability.")
-    
-    try:
-        # Read the metadata dbt just generated
-        with open(TARGET_PATH, 'r') as f:
-            run_results = json.load(f)
-        
-        results = run_results.get('results', [])
-        
-        # 1. Calculate High-Level KPIs
-        total_nodes = len(results)
-        successful_nodes = sum(1 for r in results if r.get('status') in ['success', 'pass'])
-        success_rate = (successful_nodes / total_nodes) * 100 if total_nodes > 0 else 0
-        total_time = sum(r.get('execution_time', 0) for r in results)
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Nodes Executed", total_nodes)
-        col2.metric("Pipeline Success Rate", f"{success_rate:.0f}%")
-        col3.metric("Total Execution Time", f"{total_time:.2f}s")
-
-        st.progress(min(success_rate / 100, 1.0), text=f"{success_rate:,.2f}% success rate")
-        
-        st.divider()
-        
-        # 2. Parse out Models vs. Tests
-        models_data = []
-        tests_data = []
-        
-        for result in results:
-            unique_id = result.get('unique_id', '')
-            node_type = unique_id.split('.')[0]  # Extracts 'model' or 'test'
-            name = unique_id.split('.')[-1]
-            status = result.get('status', 'unknown').upper()
-            exec_time = result.get('execution_time', 0)
-            
-            row = {'Node Name': name, 'Status': status, 'Time (s)': round(exec_time, 2)}
-            
-            if node_type == 'model':
-                models_data.append(row)
-            elif node_type == 'test':
-                tests_data.append(row)
-                
-        # 3. Visualizing Model Bottlenecks
-        st.subheader("Model Execution Bottlenecks")
-        if models_data:
-            models_df = pd.DataFrame(models_data).sort_values('Time (s)', ascending=False)
-            st.bar_chart(models_df, x="Node Name", y="Time (s)")
-        else:
-            st.info("No model telemetry found.")
-
-        # 4. Splitting the view for Tests and Raw Data
-        col_t1, col_t2 = st.columns(2)
-        
-        with col_t1:
-            st.subheader("Data Quality Tests")
-            st.write("Results from schema and custom assertions:")
-            if tests_data:
-                tests_df = pd.DataFrame(tests_data)
-                
-                # Apply color coding to statuses (Green for PASS, Red for FAIL)
-                def color_status(val):
-                    color = '#28a745' if val == 'PASS' else '#dc3545' if val == 'FAIL' else '#ffc107'
-                    return f'color: {color}; font-weight: bold'
-                    
-                styled_tests = tests_df.style.map(color_status, subset=['Status'])
-                st.dataframe(styled_tests, use_container_width=True, hide_index=True)
+with tab_dictionary:
+    st.markdown("## dbt Metric And Model Dictionary")
+    manifest = load_manifest()
+    nodes = manifest.get("nodes", {})
+    models = {key: value for key, value in nodes.items() if value.get("resource_type") == "model"}
+    if not models:
+        st.warning("manifest.json not found. Run dbt docs generate or dbt build locally.")
+    for _, model_data in models.items():
+        with st.container(border=True):
+            st.markdown(f"### `{model_data.get('name', 'unknown')}`")
+            st.write(model_data.get("description", "No description provided."))
+            columns = []
+            for column_name, column_details in model_data.get("columns", {}).items():
+                description = column_details.get("description", "")
+                if description:
+                    columns.append({"Column": column_name, "Description": description})
+            if columns:
+                st.dataframe(pd.DataFrame(columns), use_container_width=True, hide_index=True)
             else:
-                st.info("No data quality tests were executed in this run.")
-                
-        with col_t2:
-            st.subheader("Raw Telemetry Log")
-            st.write("Detailed artifact output:")
-            all_df = pd.DataFrame(models_data + tests_data)
-            st.dataframe(all_df, use_container_width=True, hide_index=True)
-            
-    except FileNotFoundError:
-        st.warning("run_results.json not found.")
+                st.caption("No column-level documentation available.")
 
-# ==========================================
-# TAB 3: Data Dictionary - Dynamically generated from dbt
-# ==========================================
-with tab3:
-    st.header("Data Dictionary")
-    st.write("Automatically generated from dbt `manifest.json`. This ensures documentation to be perfectly in sync with codebase.")
-    
-    try:
-        with open(MANIFEST_PATH, 'r') as f:
-            manifest = json.load(f)
-            
-        nodes = manifest.get('nodes', {})
-        # Filter for actual models, ignoring tests or seeds
-        models = {k: v for k, v in nodes.items() if v.get('resource_type') == 'model'}
-        
-        for node_id, model_data in models.items():
-            model_name = model_data.get('name', 'Unknown')
-            model_desc = model_data.get('description', 'No description provided.')
-            
-            st.subheader(f"`{model_name}`")
-            st.write(model_desc)
-            
-            # Extract column descriptions if they exist
-            columns = model_data.get('columns', {})
-            col_list = []
-            for col_name, col_details in columns.items():
-                desc = col_details.get('description', '')
-                if desc:  # Only show columns we explicitly documented
-                    col_list.append({"Column Name": col_name, "Description": desc})
-            
-            if col_list:
-                st.dataframe(pd.DataFrame(col_list), hide_index=True, use_container_width=True)
-            else:
-                st.caption("No column-level documentation available for this model.")
-            
-            st.markdown("\n")
-            
-    except FileNotFoundError:
-        st.warning("Data dictionary unavailable. Run `dbt build` locally.")
+with tab_assistant:
+    st.markdown("## Governed Insights Assistant")
+    st.caption("Ask about budget variance, delayed exposure, vendor reliability, cost categories, regional spend, or dbt pipeline health.")
+    suggestions = [
+        "Summarize the current portfolio.",
+        "Where is delayed-project exposure highest?",
+        "Which vendors are risky?",
+        "What is the biggest cost category?",
+        "How healthy is the dbt pipeline?",
+        "Which region has the most spend?",
+    ]
+    if "places_assistant_messages" not in st.session_state:
+        st.session_state["places_assistant_messages"] = []
 
+    if not st.session_state["places_assistant_messages"]:
+        cols = st.columns(2)
+        for idx, suggestion in enumerate(suggestions):
+            if cols[idx % 2].button(suggestion, use_container_width=True):
+                st.session_state["places_assistant_prompt"] = suggestion
 
-# --- FOOTER ---
+    if st.button("Clear assistant history"):
+        st.session_state["places_assistant_messages"] = []
+        st.rerun()
+
+    for message in st.session_state["places_assistant_messages"]:
+        render_assistant_turn(message, filtered_df)
+
+    prompt = st.chat_input("Ask about operations, cost, vendor risk, project exposure, or platform health...")
+    prompt = prompt or st.session_state.pop("places_assistant_prompt", None)
+    if prompt:
+        user_message = {"role": "user", "content": prompt}
+        st.session_state["places_assistant_messages"].append(user_message)
+        answer, metadata = governed_answer(
+            prompt,
+            filtered_df,
+            {"region": selected_region, "project_status": selected_status},
+        )
+        st.session_state["places_assistant_messages"].append({"role": "assistant", "content": answer, "usage": metadata})
+        st.rerun()
+
 st.divider()
-st.markdown("Built by [Ravi Rajpurohit](http://linktr.ee/hey_ravi) — Feedback: ravirajpurohit414@gmail.com", help="Data Engineering & Infrastructure", text_alignment="center")
-st.markdown("[LinkedIn](https://www.linkedin.com/in/ravi-rajpurohit/) | [GitHub](https://github.com/ravi-rajpurohit-gh/) | [Medium](https://ravi-rajpurohit.medium.com/)", text_alignment="center")
+st.markdown(
+    "Built by [Ravi Rajpurohit](http://linktr.ee/hey_ravi) | "
+    "[LinkedIn](https://www.linkedin.com/in/ravi-rajpurohit/) | "
+    "[GitHub](https://github.com/ravi-rajpurohit-gh/) | "
+    "[Medium](https://ravi-rajpurohit.medium.com/)",
+    help="Data Engineering, Corporate Analytics, and Governed AI",
+)

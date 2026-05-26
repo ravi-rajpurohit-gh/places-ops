@@ -14,9 +14,9 @@ vendors = pd.DataFrame({
 })
 vendors.to_csv('raw_data/vendors.csv', index=False)
 
-# 2. Generate Projects (Apple Campuses/Buildings)
-campuses = ['Apple Park', 'Infinite Loop', 'Austin Campus', 'Culver City']
-project_types = ['Expansion', 'Renovation', 'Remodeling', 'Retrofitting']
+# 2. Generate Projects across construction and corporate operating regions
+campuses = ['Southeast Region', 'Texas Region', 'West Region', 'Mid-Atlantic Region']
+project_types = ['Community Buildout', 'Land Development', 'Model Home Refresh', 'Infrastructure Upgrade']
 projects = pd.DataFrame({
     'project_id': range(1001, 1051),
     'project_name': [f'{np.random.choice(project_types)} {i}' for i in range(1001, 1051)],
