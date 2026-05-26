@@ -11,12 +11,14 @@ import altair as alt
 import duckdb
 import pandas as pd
 import streamlit as st
+import yaml
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(CURRENT_DIR, "places_database.duckdb")
 TARGET_PATH = os.path.join(CURRENT_DIR, "target", "run_results.json")
 MANIFEST_PATH = os.path.join(CURRENT_DIR, "target", "manifest.json")
+SCHEMA_PATH = os.path.join(CURRENT_DIR, "models", "schema.yml")
 
 PALETTE = {
     "bg": "#070705",
@@ -34,6 +36,9 @@ PALETTE = {
     "green": "#7fb069",
     "purple": "#9b88c8",
 }
+
+CHART_COLORS = [PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]]
+CATEGORY_COLORS = [PALETTE["gold"], PALETTE["sage"], PALETTE["copper"], PALETTE["blue"], PALETTE["green"], PALETTE["purple"]]
 
 
 CUSTOM_CSS = f"""
@@ -246,8 +251,12 @@ input,
     border: 1px solid rgba(216,166,58,0.26);
     border-radius: 8px;
     background: rgba(18,18,15,0.82);
-    overflow-x: auto;
+    overflow: auto;
     margin: 0.35rem 0 1rem;
+}}
+
+.po-table-wrap.fixed {{
+    max-height: 330px;
 }}
 
 .po-table {{
@@ -489,14 +498,28 @@ def style_chart(chart: alt.Chart, height: int = 300) -> alt.Chart:
     )
 
 
-def render_dark_table(data: pd.DataFrame) -> None:
+def render_dark_table(data: pd.DataFrame, fixed_height: bool = False) -> None:
     table = data.copy()
     html_table = table.to_html(index=False, escape=True, classes="po-table", border=0)
-    st.markdown(f'<div class="po-table-wrap">{html_table}</div>', unsafe_allow_html=True)
+    wrapper_class = "po-table-wrap fixed" if fixed_height else "po-table-wrap"
+    st.markdown(f'<div class="{wrapper_class}">{html_table}</div>', unsafe_allow_html=True)
 
 
 def safe_html(text: object) -> str:
     return html.escape(str(text)).replace("\n", "<br>")
+
+
+def render_insight_panel(title: str, body: str, source: str) -> None:
+    st.markdown(
+        f"""
+<div class="panel">
+  <div class="panel-title">{safe_html(title)}</div>
+  <div class="insight-copy">{safe_html(body)}</div>
+  <div class="caption-mono">{safe_html(source)}</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 def x_axis(field: str, title: Optional[str] = None, sort: Optional[str] = None, label_angle: int = -45) -> alt.X:
@@ -532,6 +555,14 @@ def load_manifest() -> dict:
         return {"nodes": {}}
     with open(MANIFEST_PATH, "r", encoding="utf-8") as file:
         return json.load(file)
+
+
+@st.cache_data
+def load_schema_docs() -> list[dict[str, object]]:
+    if not os.path.exists(SCHEMA_PATH):
+        return []
+    with open(SCHEMA_PATH, "r", encoding="utf-8") as file:
+        return yaml.safe_load(file).get("models", [])
 
 
 def project_summary(data: pd.DataFrame) -> pd.DataFrame:
@@ -594,6 +625,38 @@ def dbt_health_summary() -> tuple[pd.DataFrame, dict[str, float]]:
         "total_time": float(telemetry["execution_time_s"].sum()) if total_nodes else 0,
     }
     return telemetry, metrics
+
+
+def metric_dictionary() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "Metric": "Total Spend",
+                "Definition": "Sum of posted expense line amounts in the current filter context.",
+                "Business Use": "Track capital outflow by region, project status, vendor, and category.",
+            },
+            {
+                "Metric": "Remaining Budget",
+                "Definition": "Allocated project budget minus posted spend for projects in scope.",
+                "Business Use": "Surface how much budget capacity remains before additional commitments.",
+            },
+            {
+                "Metric": "Delayed Exposure",
+                "Definition": "Allocated budget tied to projects currently marked Delayed.",
+                "Business Use": "Prioritize operational review by budget at risk, not just project count.",
+            },
+            {
+                "Metric": "Vendor Reliability Risk",
+                "Definition": "Vendors below the selected reliability threshold.",
+                "Business Use": "Create a governed review queue for procurement and project operations.",
+            },
+            {
+                "Metric": "Pipeline Success Rate",
+                "Definition": "Share of latest dbt nodes with SUCCESS or PASS status in run artifacts.",
+                "Business Use": "Keep trust in dashboard metrics visible beside executive analytics.",
+            },
+        ]
+    )
 
 
 def governed_answer(prompt: str, data: pd.DataFrame, filters: dict[str, str]) -> tuple[str, dict[str, object]]:
@@ -683,7 +746,7 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         return alt.Chart(regional).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
             x=x_axis("region:N", sort="-y"),
             y=y_axis("amount:Q", "Spend"),
-            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]])),
+            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=CHART_COLORS)),
             tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
 
@@ -715,7 +778,7 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         categories["category_label"] = categories["category"].map(option_label)
         return alt.Chart(categories).mark_arc(innerRadius=70).encode(
             theta=alt.Theta("amount:Q"),
-            color=alt.Color("category_label:N", title="Category"),
+            color=alt.Color("category_label:N", title="Category", scale=alt.Scale(range=CATEGORY_COLORS)),
             tooltip=[alt.Tooltip("category_label:N", title="Category"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
 
@@ -795,10 +858,10 @@ with st.sidebar:
     st.markdown("## Filters")
     selected_region = st.selectbox("Region", all_regions, format_func=option_label)
     selected_status = st.selectbox("Project Status", all_statuses, format_func=option_label)
-    st.markdown("## Production Mirror")
-    st.caption("AWS S3/Glue · Snowflake · dbt · Qlik/Power BI · CloudWatch · governed AI")
     st.markdown("## Current Stack")
     st.caption("Python · DuckDB · dbt Core · Streamlit · Altair · Pandas")
+    st.markdown("## Production Mirror")
+    st.caption("AWS S3/Glue · Snowflake · dbt · Qlik/Power BI · CloudWatch · governed AI")
     if os.path.exists(TARGET_PATH):
         mod_time = os.path.getmtime(TARGET_PATH)
         timestamp = datetime.datetime.fromtimestamp(mod_time).strftime("%b %d, %Y - %I:%M %p")
@@ -859,7 +922,7 @@ with tab_ops:
         chart = alt.Chart(region_spend).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
             x=x_axis("region:N", sort="-y"),
             y=y_axis("amount:Q", "Spend"),
-            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]])),
+            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=CHART_COLORS)),
             tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
         st.altair_chart(style_chart(chart, height=320), use_container_width=True)
@@ -871,16 +934,7 @@ with tab_ops:
             f"after {money(metrics['total_spend'])} in posted spend, so the highest-value review path is delayed work, "
             "high-spend categories, and low-reliability vendors."
         )
-        st.markdown(
-            f"""
-<div class="panel">
-  <div class="panel-title">Governed Executive Insight</div>
-  <div class="insight-copy">{insight}</div>
-  <div class="caption-mono">Derived from fct_project_spend and current filters.</div>
-</div>
-""",
-            unsafe_allow_html=True,
-        )
+        render_insight_panel("Governed Executive Insight", insight, "Derived from fct_project_spend and current filters.")
 
     st.markdown("## Project Spend Vs Budget")
     variance_chart = alt.Chart(projects.head(12)).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
@@ -904,7 +958,7 @@ with tab_cost:
         categories["category_label"] = categories["category"].map(option_label)
         category_chart = alt.Chart(categories).mark_arc(innerRadius=78).encode(
             theta=alt.Theta("amount:Q"),
-            color=alt.Color("category_label:N", title="Category"),
+            color=alt.Color("category_label:N", title="Category", scale=alt.Scale(range=CATEGORY_COLORS)),
             tooltip=[alt.Tooltip("category_label:N", title="Category"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
         st.altair_chart(style_chart(category_chart, height=330), use_container_width=True)
@@ -913,7 +967,17 @@ with tab_cost:
         threshold = st.slider("Reliability Threshold", min_value=70, max_value=100, value=85, step=1)
         vendors = filtered_df[["vendor_name", "reliability_score"]].drop_duplicates()
         risky_vendors = vendors[vendors["reliability_score"] < threshold].sort_values("reliability_score")
-        render_dark_table(risky_vendors.rename(columns={"vendor_name": "Vendor", "reliability_score": "Reliability Score"}))
+        render_dark_table(risky_vendors.rename(columns={"vendor_name": "Vendor", "reliability_score": "Reliability Score"}), fixed_height=True)
+
+    top_category = categories.sort_values("amount", ascending=False).iloc[0] if not categories.empty else None
+    weakest_vendor = vendors.sort_values("reliability_score").iloc[0] if not vendors.empty else None
+    if top_category is not None and weakest_vendor is not None:
+        cost_insight = (
+            f"{option_label(top_category['category'])} is the largest spend category at {money(top_category['amount'])}. "
+            f"{len(risky_vendors)} vendors are below the current {threshold} reliability threshold; the lowest-scoring vendor is "
+            f"{weakest_vendor['vendor_name']} at {weakest_vendor['reliability_score']:.0f}. This links cost optimization to vendor governance."
+        )
+        render_insight_panel("Governed Cost And Risk Insight", cost_insight, "Derived from category spend, vendor reliability, and the selected threshold.")
 
     st.markdown("## Daily Spend Trend")
     trend = filtered_df.groupby("expense_date", as_index=False)["amount"].sum()
@@ -933,6 +997,12 @@ with tab_health:
     c3.metric("Total Runtime", f"{health['total_time']:.2f}s")
     st.progress(min(health["success_rate"] / 100, 1.0), text=f"{health['success_rate']:.1f}% dbt success rate")
 
+    health_insight = (
+        f"The latest dbt artifact reports {int(health['total_nodes'])} executed nodes with a {health['success_rate']:.0f}% success rate "
+        f"and {health['total_time']:.2f}s total runtime. Keeping this beside the business dashboard makes metric trust observable."
+    )
+    render_insight_panel("Governed Platform Insight", health_insight, "Derived from dbt run_results.json artifact telemetry.")
+
     if telemetry.empty:
         st.warning("dbt run_results.json not found. Run dbt build locally to refresh pipeline telemetry.")
     else:
@@ -951,18 +1021,30 @@ with tab_health:
         st.altair_chart(style_chart(assistant_visual("summarize_pipeline_health", filtered_df), height=320), use_container_width=True)
 
 with tab_dictionary:
+    st.markdown("## Governed Metric Dictionary")
+    render_dark_table(metric_dictionary())
+    render_insight_panel(
+        "Governed Metric Insight",
+        "The dashboard separates business-facing metric definitions from dbt model documentation. That gives an AI assistant approved language for answering executive questions while preserving lineage back to modeled tables.",
+        "Definitions are curated in the application layer and backed by dbt model documentation.",
+    )
+
     st.markdown("## dbt Metric And Model Dictionary")
-    manifest = load_manifest()
-    nodes = manifest.get("nodes", {})
-    models = {key: value for key, value in nodes.items() if value.get("resource_type") == "model"}
-    if not models:
-        st.warning("manifest.json not found. Run dbt docs generate or dbt build locally.")
-    for _, model_data in models.items():
+    schema_models = load_schema_docs()
+    if not schema_models:
+        manifest = load_manifest()
+        nodes = manifest.get("nodes", {})
+        schema_models = [value for value in nodes.values() if value.get("resource_type") == "model"]
+    if not schema_models:
+        st.warning("dbt schema documentation not found. Add model descriptions to models/schema.yml.")
+    for model_data in schema_models:
         with st.container(border=True):
             st.markdown(f"### `{model_data.get('name', 'unknown')}`")
             st.write(model_data.get("description", "No description provided."))
             columns = []
-            for column_name, column_details in model_data.get("columns", {}).items():
+            raw_columns = model_data.get("columns", {})
+            column_items = raw_columns.items() if isinstance(raw_columns, dict) else [(col.get("name", ""), col) for col in raw_columns]
+            for column_name, column_details in column_items:
                 description = column_details.get("description", "")
                 if description:
                     columns.append({"Column": column_name, "Description": description})

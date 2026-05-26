@@ -28,6 +28,7 @@ Use `places-ops` as the Lennar-facing proof project for construction operations,
 - Documentation added for changelog, engineering notes, and case study checkpoint.
 - Final UI consistency pass completed for footer attribution, sidebar stack framing, dark dropdown/table/chat controls, chart label readability, and executive KPI semantics.
 - Follow-up visual QA removed remaining white Streamlit surfaces by updating `.streamlit/config.toml`, replacing native dataframes with dark HTML tables, and rendering assistant chat messages with custom dark bordered bubbles.
+- Added cross-tab governed insight panels, consistent chart palette usage, scrollable vendor risk review table, and a stronger Dictionary tab with business metric definitions plus live `schema.yml` model documentation.
 
 ## Key Decisions
 
@@ -56,6 +57,7 @@ Use `places-ops` as the Lennar-facing proof project for construction operations,
 | 2026-05-26 | Tightened the dark enterprise theme with readable KPI cards, dark dropdown menus, hidden chart gridlines, and animated governed-insight headings. |
 | 2026-05-26 | Completed final visual consistency pass: centered portfolio footer, production/current stack sidebar sections, dark dataframe surfaces, visible assistant chat borders, 45-degree chart labels, and clearer Remaining Budget executive KPI. |
 | 2026-05-26 | Fixed the actual remaining white surfaces after browser QA: dark Streamlit theme config, dark dropdown open state, custom dark tables, visible assistant bubbles, and dark chat input. |
+| 2026-05-26 | Strengthened AI-dashboard positioning with governed readouts across Cost & Risk, Platform Health, and Dictionary; aligned chart colors; added scrollable vendor risk table; expanded model documentation. |
 
 ## Open Questions
 

@@ -11,6 +11,10 @@ models:
           - not_null
       - name: project_name
         description: "Name of the facility upgrade or construction project."
+      - name: campus
+        description: "Operating region or business area where the project is located."
+      - name: budget_allocated
+        description: "Approved budget allocated to the project."
       - name: status
         description: "Current status of the construction project."
         tests:
@@ -51,9 +55,23 @@ models:
         tests:
           - unique
           - not_null
+      - name: expense_date
+        description: "Date when the expense was posted."
       - name: amount
         description: "Capital spent on this specific expense line."
         tests:
           - not_null
+      - name: category
+        description: "Spend category for the expense line, such as materials, labor, equipment, or permits."
+      - name: project_name
+        description: "Project associated with the expense line."
       - name: campus
         description: "The operating region or business area where the project is located."
+      - name: status
+        description: "Current project delivery status at the time the mart is built."
+      - name: budget_allocated
+        description: "Approved budget for the associated project."
+      - name: vendor_name
+        description: "Vendor or contractor associated with the expense line."
+      - name: reliability_score
+        description: "Vendor reliability score used for procurement and project risk review."

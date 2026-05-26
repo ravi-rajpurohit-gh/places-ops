@@ -40,6 +40,8 @@ The 2026-05-26 consistency pass tightened the remaining native Streamlit surface
 
 A follow-up QA pass found the Streamlit theme file was still forcing white backgrounds. The app theme config now uses the same dark PlacesOps palette as `CUSTOM_CSS`, and the table/chat surfaces use explicit HTML components where native Streamlit controls were not reliably themeable.
 
+The dashboard now treats governed AI as a product pattern across tabs, not only as a separate assistant. Executive Operations, Cost & Risk, Platform Health, and Dictionary each include governed narrative readouts backed by curated metrics or dbt artifacts. The Dictionary tab reads `models/schema.yml` directly so column documentation changes appear immediately in the app, while the dbt manifest remains useful for artifact and lineage workflows.
+
 ### Governed Insights Assistant
 
 The assistant is a function router, not a free-form SQL generator. It maps natural-language questions to approved analytical routes, returns deterministic answers, attaches contextual visuals, and shows trace metadata. This demonstrates the direction of AI-powered dashboards while avoiding API keys, hosted quota limits, local model setup, and hallucinated metric definitions.
@@ -70,6 +72,8 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 - Confirm assistant returns text, a contextual chart, and analysis trace metadata
 - Confirm dbt artifacts show passing model/test results
 - Confirm dropdowns, tables, dictionary sections, assistant messages, and chat input do not fall back to white native Streamlit surfaces
+- Confirm Cost & Risk uses the shared chart palette and the vendor reliability table scrolls within a fixed-height frame
+- Confirm Dictionary shows governed metric definitions plus current schema.yml model documentation
 
 ## Checkpoint Record
 
