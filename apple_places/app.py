@@ -18,17 +18,20 @@ TARGET_PATH = os.path.join(CURRENT_DIR, "target", "run_results.json")
 MANIFEST_PATH = os.path.join(CURRENT_DIR, "target", "manifest.json")
 
 PALETTE = {
-    "bg": "#070807",
-    "panel": "#111412",
-    "border": "#2a302d",
-    "text": "#f5f4ef",
-    "muted": "#9aa39d",
-    "dim": "#6f7772",
-    "green": "#34d399",
-    "blue": "#60a5fa",
-    "yellow": "#facc15",
-    "red": "#f87171",
-    "purple": "#a78bfa",
+    "bg": "#070705",
+    "panel": "#12120f",
+    "panel_2": "#181814",
+    "border": "#303028",
+    "text": "#f7f4eb",
+    "muted": "#a8a294",
+    "dim": "#736f66",
+    "sage": "#b8c48a",
+    "gold": "#d8a63a",
+    "copper": "#c46f3d",
+    "blue": "#4e7db8",
+    "red": "#d06455",
+    "green": "#7fb069",
+    "purple": "#9b88c8",
 }
 
 
@@ -36,8 +39,9 @@ CUSTOM_CSS = f"""
 <style>
 .stApp {{
     background:
-        radial-gradient(circle at 82% -12%, rgba(52,211,153,0.11), transparent 34rem),
-        linear-gradient(180deg, #080a09 0%, #070807 48%, #070807 100%);
+        radial-gradient(circle at 82% -12%, rgba(184,196,138,0.12), transparent 36rem),
+        radial-gradient(circle at 8% 8%, rgba(196,111,61,0.08), transparent 26rem),
+        linear-gradient(180deg, #090907 0%, #070705 52%, #070705 100%);
     color: {PALETTE["text"]};
 }}
 
@@ -48,8 +52,13 @@ CUSTOM_CSS = f"""
 }}
 
 [data-testid="stSidebar"] {{
-    background: #090b0a;
+    background: #080806;
     border-right: 1px solid {PALETTE["border"]};
+}}
+
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stCaptionContainer"] {{
+    color: {PALETTE["muted"]};
 }}
 
 h1, h2, h3 {{
@@ -76,7 +85,55 @@ h2 {{
 
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
     color: {PALETTE["text"]};
-    border-bottom-color: {PALETTE["green"]};
+    border-bottom-color: {PALETTE["gold"]};
+}}
+
+div[data-baseweb="select"] > div {{
+    background: {PALETTE["panel"]} !important;
+    border: 1px solid {PALETTE["border"]} !important;
+    border-radius: 7px !important;
+    color: {PALETTE["text"]} !important;
+}}
+
+[data-testid="stButton"] button {{
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018)) !important;
+    border: 1px solid {PALETTE["border"]} !important;
+    border-radius: 7px !important;
+    color: {PALETTE["text"]} !important;
+    min-height: 2.65rem;
+    font-weight: 650 !important;
+}}
+
+[data-testid="stButton"] button:hover {{
+    border-color: rgba(216,166,58,0.70) !important;
+    color: {PALETTE["text"]} !important;
+    background: linear-gradient(180deg, rgba(216,166,58,0.14), rgba(255,255,255,0.025)) !important;
+}}
+
+[data-testid="stChatInput"] {{
+    background: transparent !important;
+}}
+
+[data-testid="stChatInput"] textarea {{
+    background: {PALETTE["panel_2"]} !important;
+    border: 1px solid {PALETTE["border"]} !important;
+    border-radius: 8px !important;
+    color: {PALETTE["text"]} !important;
+}}
+
+[data-testid="stChatInput"] textarea::placeholder {{
+    color: {PALETTE["muted"]} !important;
+}}
+
+[data-testid="stChatInput"] button {{
+    background: {PALETTE["gold"]} !important;
+    color: #090907 !important;
+    border-radius: 7px !important;
+}}
+
+[data-testid="stVerticalBlockBorderWrapper"] {{
+    border-color: {PALETTE["border"]} !important;
+    background: rgba(18,18,15,0.58) !important;
 }}
 
 .po-header {{
@@ -86,7 +143,7 @@ h2 {{
 }}
 
 .po-kicker {{
-    color: {PALETTE["green"]};
+    color: {PALETTE["gold"]};
     font-size: 0.82rem;
     font-weight: 800;
     letter-spacing: 0.15em;
@@ -117,7 +174,7 @@ h2 {{
 
 .panel-title {{
     display: inline-block;
-    color: {PALETTE["green"]};
+    color: {PALETTE["gold"]};
     font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.13em;
@@ -150,6 +207,27 @@ h2 {{
 
 .sidebar-footer strong {{
     color: {PALETTE["text"]};
+}}
+
+.sidebar-footer a {{
+    color: {PALETTE["gold"]};
+    text-decoration: none;
+}}
+
+.assistant-intro {{
+    border: 1px solid {PALETTE["border"]};
+    border-radius: 8px;
+    background: rgba(18,18,15,0.68);
+    padding: 1rem;
+    margin: 0.35rem 0 1rem;
+}}
+
+.assistant-intro strong {{
+    color: {PALETTE["text"]};
+}}
+
+.assistant-intro span {{
+    color: {PALETTE["muted"]};
 }}
 </style>
 """
@@ -353,7 +431,7 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         return alt.Chart(regional).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
             x=alt.X("region:N", title=None, sort="-y"),
             y=alt.Y("amount:Q", title="Spend"),
-            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["green"], PALETTE["blue"], PALETTE["purple"], PALETTE["yellow"]])),
+            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]])),
             tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
 
@@ -362,7 +440,7 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         return alt.Chart(vendors).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
             x=alt.X("vendor_name:N", title=None, sort="y"),
             y=alt.Y("reliability_score:Q", title="Reliability Score"),
-            color=alt.Color("reliability_score:Q", legend=None, scale=alt.Scale(range=[PALETTE["red"], PALETTE["yellow"], PALETTE["green"]])),
+            color=alt.Color("reliability_score:Q", legend=None, scale=alt.Scale(range=[PALETTE["red"], PALETTE["gold"], PALETTE["sage"]])),
             tooltip=[alt.Tooltip("vendor_name:N", title="Vendor"), alt.Tooltip("reliability_score:Q", title="Reliability", format=".0f")],
         )
 
@@ -467,7 +545,8 @@ with st.sidebar:
         """
 <div class="sidebar-footer">
   <strong>Built by Ravi Rajpurohit</strong><br>
-  Data Engineering · Corporate Analytics · Governed AI
+  Data Engineering · Corporate Analytics · Governed AI<br>
+  <a href="https://ravirajpurohit.com" target="_blank">ravirajpurohit.com</a>
 </div>
 """,
         unsafe_allow_html=True,
@@ -516,7 +595,7 @@ with tab_ops:
         chart = alt.Chart(region_spend).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
             x=alt.X("region:N", title=None, sort="-y"),
             y=alt.Y("amount:Q", title="Spend"),
-            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["green"], PALETTE["blue"], PALETTE["purple"], PALETTE["yellow"]])),
+            color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]])),
             tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
         st.altair_chart(style_chart(chart, height=320), use_container_width=True)
@@ -542,7 +621,7 @@ with tab_ops:
     variance_chart = alt.Chart(projects.head(12)).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
         x=alt.X("project_name:N", title=None, sort="-y"),
         y=alt.Y("budget_variance:Q", title="Spend Minus Budget"),
-        color=alt.Color("budget_variance:Q", legend=None, scale=alt.Scale(range=[PALETTE["green"], PALETTE["yellow"], PALETTE["red"]])),
+        color=alt.Color("budget_variance:Q", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["gold"], PALETTE["red"]])),
         tooltip=[
             alt.Tooltip("project_name:N", title="Project"),
             alt.Tooltip("campus:N", title="Region"),
@@ -580,7 +659,7 @@ with tab_cost:
     trend_chart = alt.Chart(trend).mark_line(point=True, strokeWidth=2.5).encode(
         x=alt.X("expense_date:T", title="Date"),
         y=alt.Y("amount:Q", title="Daily Spend"),
-        color=alt.value(PALETTE["green"]),
+        color=alt.value(PALETTE["gold"]),
         tooltip=[alt.Tooltip("expense_date:T", title="Date"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
     )
     st.altair_chart(style_chart(trend_chart, height=310), use_container_width=True)
@@ -635,7 +714,15 @@ with tab_dictionary:
 
 with tab_assistant:
     st.markdown("## Governed Insights Assistant")
-    st.caption("Ask about budget variance, delayed exposure, vendor reliability, cost categories, regional spend, or dbt pipeline health.")
+    st.markdown(
+        """
+<div class="assistant-intro">
+  <strong>Ask operational questions in plain language.</strong><br>
+  <span>The assistant routes each question to governed portfolio, cost, vendor, project-risk, or platform-health functions, then returns a precise answer, chart, and trace metadata.</span>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
     suggestions = [
         "Summarize the current portfolio.",
         "Where is delayed-project exposure highest?",
@@ -675,7 +762,7 @@ with tab_assistant:
 
 st.divider()
 st.markdown(
-    "Built by [Ravi Rajpurohit](http://linktr.ee/hey_ravi) | "
+    "Built by [Ravi Rajpurohit](https://ravirajpurohit.com) | "
     "[LinkedIn](https://www.linkedin.com/in/ravi-rajpurohit/) | "
     "[GitHub](https://github.com/ravi-rajpurohit-gh/) | "
     "[Medium](https://ravi-rajpurohit.medium.com/)",

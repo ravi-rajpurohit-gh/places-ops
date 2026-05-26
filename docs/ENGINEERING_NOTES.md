@@ -30,6 +30,10 @@ DuckDB keeps local iteration fast, while dbt Core provides the production modeli
 
 The app stays as one Streamlit surface with tabs. That keeps business metrics, vendor risk, platform health, metric documentation, and AI-assisted analysis easy to scan in one walkthrough.
 
+### Domain-Aligned UI Theme
+
+The visual system uses a warm, restrained construction/corporate analytics palette instead of generic Streamlit defaults. Native controls, assistant prompts, chat input, sidebar filters, and insight panels are styled consistently so the product reads like an internal operations analytics application rather than a hobby dashboard.
+
 ### Governed Insights Assistant
 
 The assistant is a function router, not a free-form SQL generator. It maps natural-language questions to approved analytical routes, returns deterministic answers, attaches contextual visuals, and shows trace metadata. This demonstrates the direction of AI-powered dashboards while avoiding API keys, hosted quota limits, local model setup, and hallucinated metric definitions.
@@ -68,4 +72,5 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 - DuckDB warehouse refreshed with neutral generated regions.
 - dbt artifact log shows `PASS=14 WARN=0 ERROR=0 SKIP=0`.
 - Browser smoke test confirmed the main dashboard and assistant render correctly.
+- Assistant tab theme was polished with dark controls, production-style prompt cards, and portfolio attribution at `ravirajpurohit.com`.
 - Documentation updated across README, app README, changelog, tracker, engineering notes, and case study.

@@ -24,6 +24,7 @@ Use `places-ops` as the Lennar-facing proof project for construction operations,
 - App enhanced into five workflows: Executive Operations, Cost & Vendor Risk, Data Platform Health, Metric Dictionary, and Insights Assistant.
 - Generated data and DuckDB tables now use neutral operating regions instead of company-specific campuses.
 - Governed Insights Assistant added for portfolio, delayed exposure, vendor risk, cost category, regional spend, and dbt health questions.
+- UI theme polished toward a warm construction/corporate analytics product with dark controls, readable assistant prompts, and portfolio attribution.
 - Documentation added for changelog, engineering notes, and case study checkpoint.
 
 ## Key Decisions
@@ -49,6 +50,7 @@ Use `places-ops` as the Lennar-facing proof project for construction operations,
 | 2026-05-25 | Neutralized generated regions and schema documentation away from company-specific campus naming. |
 | 2026-05-25 | Refreshed DuckDB warehouse from regenerated project/vendor/expense CSVs and verified neutral regions in `fct_project_spend`. |
 | 2026-05-25 | Added changelog, engineering notes, and case study documentation for project lifecycle and checkpoint tracking. |
+| 2026-05-26 | Polished assistant and app UI/UX with domain-aligned colors, dark Streamlit controls, production-style prompt cards, and `ravirajpurohit.com` attribution. |
 
 ## Open Questions
 

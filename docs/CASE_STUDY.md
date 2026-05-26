@@ -28,6 +28,7 @@ timeline
                : Neutralized generated operating regions and model documentation
                : Rebuilt Streamlit into executive operations, cost risk, platform health, dictionary, and assistant workflows
                : Added governed visual analyst with contextual charts and trace metadata
+               : Polished domain-aligned UI theme, assistant prompts, native controls, and portfolio attribution
                : Refreshed DuckDB warehouse and verified app in browser
                : Documented checkpoint across README, changelog, tracker, engineering notes, and case study
 ```
@@ -42,6 +43,7 @@ timeline
 | Quality & Observability | Added dbt tests, run artifacts, success-rate metrics, and runtime telemetry. | `schema.yml`, `target/run_results.json`, Data Platform Health tab. |
 | Business Analytics | Added executive KPIs, region spend, budget variance, delayed exposure, cost categories, and vendor reliability risk. | Streamlit app tabs. |
 | Governed AI Workflow | Added natural-language routing to approved analytical functions with chart responses and trace metadata. | Insights Assistant tab in `apple_places/app.py`. |
+| UX Theming | Styled the app around a warm construction/corporate analytics visual system with dark controls and production-style assistant prompts. | `CUSTOM_CSS` and Streamlit app surface. |
 | Documentation | Added tracker, engineering notes, changelog, and case study checkpoint. | `docs/` and `CHANGELOG.md`. |
 
 ## Decision Log
@@ -100,5 +102,6 @@ As of 2026-05-25, PlacesOps is in a stable enhancement checkpoint:
 - generated data and warehouse artifact use neutral operating regions,
 - dbt artifacts report 14 passing nodes/tests,
 - assistant answers questions with text, visuals, and trace metadata,
+- UI uses a domain-aligned production theme with dark controls and portfolio attribution at `ravirajpurohit.com`,
 - documentation is aligned across README, tracker, engineering notes, changelog, and case study,
 - remaining work is optional polish or deployment rather than core functionality.
