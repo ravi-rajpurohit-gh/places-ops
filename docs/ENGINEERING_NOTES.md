@@ -1,6 +1,6 @@
 # Engineering Notes
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26
 
 ## Purpose
 
@@ -35,6 +35,8 @@ The app stays as one Streamlit surface with tabs. That keeps business metrics, v
 The visual system uses a warm, restrained construction/corporate analytics palette instead of generic Streamlit defaults. Native controls, assistant prompts, chat input, sidebar filters, and insight panels are styled consistently so the product reads like an internal operations analytics application rather than a hobby dashboard.
 
 The app intentionally remains dark because the product surface combines executive operations, platform health, and governed assistant workflows. The final theme removes bright chart gridlines, uses dark dropdown menus, makes KPI values readable in card surfaces, and highlights governed insight labels with a subtle left-to-right sheen.
+
+The 2026-05-26 consistency pass tightened the remaining native Streamlit surfaces: dropdown hover states now stay in the dark palette, dataframes and dictionary tables sit inside dark framed surfaces, assistant message boundaries are more visible, and the main footer uses a centered portfolio-only attribution. Executive headline metrics were also adjusted from raw negative variance to positive remaining budget so the first scan reads like an operations command center instead of an accounting export.
 
 ### Governed Insights Assistant
 

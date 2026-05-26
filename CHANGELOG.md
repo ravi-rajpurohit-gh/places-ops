@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-05-26
+
+- Refined the PlacesOps theme consistency pass with centered portfolio-only footer attribution, visible footer divider, dark dropdown hover states, darker table/data dictionary surfaces, stronger assistant chat boundaries, and readable chat input styling.
+- Reworked Executive Ops KPI semantics so the headline card shows `Remaining Budget` instead of a negative raw variance while retaining spend-minus-budget analysis in the project-level chart.
+- Added the current local project stack to the sidebar beside the production mirror and rotated chart axis labels for easier scanning.
+
 ## 2026-05-25
 
 - Tightened the app-wide UI theme with readable dark KPI cards, dark dropdown menus, hidden chart gridlines, and subtle animated insight headers.

@@ -110,6 +110,7 @@ div[data-baseweb="select"] span {{
 
 [data-baseweb="popover"],
 [data-baseweb="popover"] > div,
+[data-baseweb="menu"],
 ul[role="listbox"] {{
     background: {PALETTE["panel_2"]} !important;
     border: 1px solid {PALETTE["border"]} !important;
@@ -117,14 +118,19 @@ ul[role="listbox"] {{
 }}
 
 li[role="option"],
-div[role="option"] {{
+div[role="option"],
+[data-baseweb="menu"] li,
+[data-baseweb="menu"] div {{
     background: {PALETTE["panel_2"]} !important;
     color: {PALETTE["text"]} !important;
 }}
 
 li[role="option"]:hover,
-div[role="option"]:hover {{
+div[role="option"]:hover,
+[data-baseweb="menu"] li:hover,
+[data-baseweb="menu"] div:hover {{
     background: rgba(216,166,58,0.16) !important;
+    color: {PALETTE["text"]} !important;
 }}
 
 [data-testid="stMetric"] {{
@@ -178,9 +184,15 @@ div[role="option"]:hover {{
     background: transparent !important;
 }}
 
+[data-testid="stChatInput"] > div {{
+    background: rgba(18,18,15,0.74) !important;
+    border: 1px solid rgba(216,166,58,0.34) !important;
+    border-radius: 9px !important;
+}}
+
 [data-testid="stChatInput"] textarea {{
     background: {PALETTE["panel_2"]} !important;
-    border: 1px solid {PALETTE["border"]} !important;
+    border: 1px solid rgba(216,166,58,0.34) !important;
     border-radius: 8px !important;
     color: {PALETTE["text"]} !important;
 }}
@@ -196,8 +208,33 @@ div[role="option"]:hover {{
 }}
 
 [data-testid="stVerticalBlockBorderWrapper"] {{
-    border-color: {PALETTE["border"]} !important;
+    border-color: rgba(216,166,58,0.28) !important;
     background: rgba(18,18,15,0.58) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+}}
+
+[data-testid="stDataFrame"] {{
+    background: rgba(18,18,15,0.72) !important;
+    border: 1px solid rgba(216,166,58,0.24) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}}
+
+[data-testid="stDataFrame"] div {{
+    color: {PALETTE["text"]};
+}}
+
+label,
+[data-testid="stWidgetLabel"] p {{
+    color: {PALETTE["muted"]} !important;
+    font-weight: 750 !important;
+}}
+
+[data-testid="stSlider"] label p {{
+    color: {PALETTE["muted"]} !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem !important;
 }}
 
 .po-header {{
@@ -288,6 +325,21 @@ div[role="option"]:hover {{
     text-decoration: none;
 }}
 
+.app-footer {{
+    border-top: 1px solid rgba(216,166,58,0.30);
+    margin-top: 2.3rem;
+    padding-top: 1.05rem;
+    text-align: center;
+    color: {PALETTE["muted"]};
+    font-size: 0.82rem;
+}}
+
+.app-footer a {{
+    color: {PALETTE["gold"]};
+    font-weight: 750;
+    text-decoration: none;
+}}
+
 .assistant-intro {{
     border: 1px solid {PALETTE["border"]};
     border-radius: 8px;
@@ -333,8 +385,8 @@ def style_chart(chart: alt.Chart, height: int = 300) -> alt.Chart:
             tickOpacity=0,
             labelColor=PALETTE["muted"],
             titleColor=PALETTE["muted"],
-            labelAngle=-30,
-            labelLimit=150,
+            labelAngle=-45,
+            labelLimit=180,
         )
         .configure_axisX(grid=False, gridOpacity=0, domain=False, ticks=False)
         .configure_axisY(grid=False, gridOpacity=0, domain=False, ticks=False)
@@ -343,8 +395,13 @@ def style_chart(chart: alt.Chart, height: int = 300) -> alt.Chart:
     )
 
 
-def x_axis(field: str, title: Optional[str] = None, sort: Optional[str] = None) -> alt.X:
-    return alt.X(field, title=title, sort=sort, axis=alt.Axis(grid=False, domain=False, ticks=False))
+def x_axis(field: str, title: Optional[str] = None, sort: Optional[str] = None, label_angle: int = -45) -> alt.X:
+    return alt.X(
+        field,
+        title=title,
+        sort=sort,
+        axis=alt.Axis(grid=False, domain=False, ticks=False, labelAngle=label_angle, labelLimit=180),
+    )
 
 
 def y_axis(field: str, title: str) -> alt.Y:
@@ -402,6 +459,8 @@ def portfolio_metrics(data: pd.DataFrame) -> dict[str, float]:
         "total_budget": float(total_budget),
         "total_spend": float(total_spend),
         "budget_variance": float(total_spend - total_budget),
+        "remaining_budget": float(total_budget - total_spend),
+        "over_budget_exposure": float(projects.loc[projects["budget_variance"] > 0, "budget_variance"].sum()),
         "budget_used_pct": float(total_spend * 100 / total_budget) if total_budget else 0,
         "delayed_exposure": float(delayed["budget_allocated"].sum()),
         "risky_vendor_count": float(len(risky_vendors)),
@@ -490,7 +549,8 @@ def governed_answer(prompt: str, data: pd.DataFrame, filters: dict[str, str]) ->
     else:
         answer = (
             f"The current portfolio includes {int(metrics['project_count'])} projects, {money(metrics['total_spend'])} in spend, "
-            f"{money(metrics['total_budget'])} in allocated budget, and {money(metrics['delayed_exposure'])} in delayed-project exposure. "
+            f"{money(metrics['total_budget'])} in allocated budget, {money(metrics['remaining_budget'])} remaining budget, "
+            f"and {money(metrics['delayed_exposure'])} in delayed-project exposure. "
             f"Average vendor reliability is {metrics['avg_vendor_reliability']:.1f}."
         )
         rows_considered = int(len(data))
@@ -620,9 +680,11 @@ with st.sidebar:
     st.caption("Construction, vendor, budget, and corporate operations analytics.")
     st.markdown("## Filters")
     selected_region = st.selectbox("Region", all_regions, format_func=option_label)
-    selected_status = st.selectbox("Project status", all_statuses, format_func=option_label)
+    selected_status = st.selectbox("Project Status", all_statuses, format_func=option_label)
     st.markdown("## Production Mirror")
     st.caption("AWS S3/Glue · Snowflake · dbt · Qlik/Power BI · CloudWatch · governed AI")
+    st.markdown("## Current Stack")
+    st.caption("Python · DuckDB · dbt Core · Streamlit · Altair · Pandas")
     if os.path.exists(TARGET_PATH):
         mod_time = os.path.getmtime(TARGET_PATH)
         timestamp = datetime.datetime.fromtimestamp(mod_time).strftime("%b %d, %Y - %I:%M %p")
@@ -671,7 +733,7 @@ with tab_ops:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Projects", f"{int(metrics['project_count']):,}")
     c2.metric("Total Spend", money(metrics["total_spend"]))
-    c3.metric("Budget Variance", money(metrics["budget_variance"]))
+    c3.metric("Remaining Budget", money(metrics["remaining_budget"]))
     c4.metric("Delayed Exposure", money(metrics["delayed_exposure"]))
     st.progress(min(metrics["budget_used_pct"] / 100, 1.0), text=f"{metrics['budget_used_pct']:.1f}% of allocated budget consumed")
 
@@ -691,8 +753,9 @@ with tab_ops:
         delayed_count = int((projects["status"] == "Delayed").sum())
         insight = (
             f"The current portfolio has {int(metrics['project_count'])} projects and {money(metrics['delayed_exposure'])} "
-            f"in delayed-project exposure across {delayed_count} delayed projects. Budget variance is {money(metrics['budget_variance'])}, "
-            "so the highest-value review path is delayed work, high-spend categories, and low-reliability vendors."
+            f"in delayed-project exposure across {delayed_count} delayed projects. Remaining budget is {money(metrics['remaining_budget'])} "
+            f"after {money(metrics['total_spend'])} in posted spend, so the highest-value review path is delayed work, "
+            "high-spend categories, and low-reliability vendors."
         )
         st.markdown(
             f"""
@@ -705,7 +768,7 @@ with tab_ops:
             unsafe_allow_html=True,
         )
 
-    st.markdown("## Project Budget Variance")
+    st.markdown("## Project Spend Vs Budget")
     variance_chart = alt.Chart(projects.head(12)).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
         x=x_axis("project_name:N", sort="-y"),
         y=y_axis("budget_variance:Q", "Spend Minus Budget"),
@@ -733,7 +796,7 @@ with tab_cost:
         st.altair_chart(style_chart(category_chart, height=330), use_container_width=True)
     with right:
         st.markdown("## Vendor Reliability Risk")
-        threshold = st.slider("Reliability threshold", min_value=70, max_value=100, value=85, step=1)
+        threshold = st.slider("Reliability Threshold", min_value=70, max_value=100, value=85, step=1)
         vendors = filtered_df[["vendor_name", "reliability_score"]].drop_duplicates()
         risky_vendors = vendors[vendors["reliability_score"] < threshold].sort_values("reliability_score")
         st.dataframe(
@@ -848,11 +911,11 @@ with tab_assistant:
         st.session_state["places_assistant_messages"].append({"role": "assistant", "content": answer, "usage": metadata})
         st.rerun()
 
-st.divider()
 st.markdown(
-    "Built by [Ravi Rajpurohit](https://ravirajpurohit.com) | "
-    "[LinkedIn](https://www.linkedin.com/in/ravi-rajpurohit/) | "
-    "[GitHub](https://github.com/ravi-rajpurohit-gh/) | "
-    "[Medium](https://ravi-rajpurohit.medium.com/)",
-    help="Data Engineering, Corporate Analytics, and Governed AI",
+    """
+<div class="app-footer">
+  Built by <a href="https://ravirajpurohit.com" target="_blank">Ravi Rajpurohit</a>
+</div>
+""",
+    unsafe_allow_html=True,
 )
