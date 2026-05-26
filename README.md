@@ -40,8 +40,8 @@ The Streamlit app serves two audiences:
 
 - **Executive Operations:** portfolio KPIs for projects, total spend, budget variance, delayed-project exposure, regional spend, and executive interpretation.
 - **Cost & Vendor Risk:** cost categories, daily spend trend, vendor reliability thresholding, and operational risk queues.
-- **Data Platform Health:** dbt run artifacts, execution telemetry, success rate, and model/test observability.
-- **Metric Dictionary:** generated model and column documentation from the dbt manifest so dashboard users and engineers can inspect trusted data assets.
+- **Platform Health:** dbt run artifacts, execution telemetry, success rate, model/test observability, and governed platform insight.
+- **Dictionary:** governed business metric definitions plus current dbt model and column documentation from `models/schema.yml`.
 - **Insights Assistant:** governed natural-language analysis over portfolio, vendor, delayed exposure, category, regional, and pipeline-health questions with contextual charts and trace metadata.
 
 The project demonstrates common enterprise analytics patterns:
@@ -98,7 +98,7 @@ flowchart LR
     D --> E["fct_project_spend"]
     E --> F["Streamlit business dashboard"]
     G["dbt run_results.json"] --> H["Pipeline health view"]
-    I["dbt manifest.json"] --> J["Data dictionary"]
+    I["models/schema.yml"] --> J["Data dictionary"]
     E --> K["Governed Insights Assistant"]
     H --> K
     J --> K
@@ -116,18 +116,20 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Track goals, decisions, lifecycle, and progress in [docs/LENNAR_TRACKER.md](docs/LENNAR_TRACKER.md), [docs/CASE_STUDY.md](docs/CASE_STUDY.md), and [docs/ENGINEERING_NOTES.md](docs/ENGINEERING_NOTES.md).
+Track goals, decisions, lifecycle, and progress in [docs/LENNAR_TRACKER.md](docs/LENNAR_TRACKER.md), [docs/CASE_STUDY.md](docs/CASE_STUDY.md), [docs/PORTFOLIO_BRIEF.md](docs/PORTFOLIO_BRIEF.md), and [docs/ENGINEERING_NOTES.md](docs/ENGINEERING_NOTES.md).
 
 ## Project Checkpoint
 
-As of 2026-05-25, PlacesOps is in an enhanced checkpoint state:
+As of 2026-05-26, PlacesOps is in a portfolio-ready checkpoint state:
 
 - the Streamlit app is reframed as a construction and corporate analytics command center,
 - generated data uses neutral operating regions instead of company-specific campuses,
 - DuckDB tables are refreshed from generated project, vendor, and expense data,
 - dbt artifacts show 14 passing nodes/tests,
 - the assistant answers governed natural-language questions with contextual charts and trace metadata,
-- tracker, case study, engineering notes, changelog, root README, and app README are aligned.
+- governed insight panels appear across Executive Operations, Cost & Risk, Platform Health, and Dictionary,
+- the Dictionary tab includes business metric definitions plus current `schema.yml` model documentation,
+- tracker, case study, portfolio brief, engineering notes, changelog, root README, and app README are aligned.
 
 ## 30-Second Recruiter Pitch
 

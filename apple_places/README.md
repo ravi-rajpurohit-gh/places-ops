@@ -25,8 +25,8 @@ The vision for PlacesOps is a small but realistic enterprise analytics hub:
 
 - **Executive Operations:** projects, total spend, budget variance, delayed-project exposure, regional spend, and governed executive insight.
 - **Cost & Vendor Risk:** cost categories, daily spend trend, reliability thresholding, and vendor review queues.
-- **Data Platform Health:** model execution, test results, success rate, and model bottlenecks from dbt artifacts.
-- **Metric Dictionary:** generated model and column documentation from the dbt manifest.
+- **Platform Health:** model execution, test results, success rate, model bottlenecks, and governed platform insight from dbt artifacts.
+- **Dictionary:** governed business metric definitions plus current model and column documentation from `models/schema.yml`.
 - **Insights Assistant:** governed natural-language analysis with text answers, contextual visuals, selected analytical tool, estimated tokens, rows considered, latency, API call count, and API cost.
 
 ## Why This Maps to Lennar

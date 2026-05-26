@@ -32,7 +32,7 @@ The app stays as one Streamlit surface with tabs. That keeps business metrics, v
 
 ### Domain-Aligned UI Theme
 
-The visual system uses a warm, restrained construction/corporate analytics palette instead of generic Streamlit defaults. Native controls, assistant prompts, chat input, sidebar filters, and insight panels are styled consistently so the product reads like an internal operations analytics application rather than a hobby dashboard.
+The visual system uses a warm, restrained construction/corporate analytics palette instead of generic Streamlit defaults. Native controls, assistant prompts, chat input, sidebar filters, and insight panels are styled consistently so the product reads like an internal operations analytics application.
 
 The app intentionally remains dark because the product surface combines executive operations, platform health, and governed assistant workflows. The final theme removes bright chart gridlines, uses dark dropdown menus, makes KPI values readable in card surfaces, and highlights governed insight labels with a subtle left-to-right sheen.
 
@@ -67,7 +67,7 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 - Generate data: `python generate_mock_data.py`
 - Build models and artifacts: `cd apple_places && dbt build --profiles-dir .`
 - Run app: `streamlit run apple_places/app.py`
-- Confirm tabs render: Executive Operations, Cost & Vendor Risk, Data Platform Health, Metric Dictionary, Insights Assistant
+- Confirm tabs render: Executive Ops, Cost & Risk, Platform Health, Dictionary, Assistant
 - Confirm regions are neutral operating regions, not company-specific campuses
 - Confirm assistant returns text, a contextual chart, and analysis trace metadata
 - Confirm dbt artifacts show passing model/test results
@@ -75,13 +75,20 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 - Confirm Cost & Risk uses the shared chart palette and the vendor reliability table scrolls within a fixed-height frame
 - Confirm Dictionary shows governed metric definitions plus current schema.yml model documentation
 
+## Portfolio Materials
+
+- [Case study](CASE_STUDY.md) includes the full lifecycle, decision log, architecture, data model, validation strategy, and production evolution.
+- [Portfolio brief](PORTFOLIO_BRIEF.md) is the shorter version for adapting into `ravirajpurohit.com`.
+- [Lennar tracker](LENNAR_TRACKER.md) preserves goals, decisions, progress, and role-alignment notes separately from the public-facing case study narrative.
+
 ## Checkpoint Record
 
-2026-05-25 checkpoint:
+2026-05-26 checkpoint:
 
 - Streamlit app enhanced into a corporate analytics command center.
 - DuckDB warehouse refreshed with neutral generated regions.
 - dbt artifact log shows `PASS=14 WARN=0 ERROR=0 SKIP=0`.
-- Browser smoke test confirmed the main dashboard and assistant render correctly.
-- Assistant tab theme was polished with dark controls, production-style prompt cards, and portfolio attribution at `ravirajpurohit.com`.
-- Documentation updated across README, app README, changelog, tracker, engineering notes, and case study.
+- Browser smoke tests confirmed executive, cost/risk, platform health, dictionary, dropdown, table, and assistant surfaces render correctly.
+- Governed insight panels appear across the dashboard, not only in the assistant tab.
+- Dictionary displays business metric definitions and current `schema.yml` model documentation.
+- Documentation updated across README, app README, changelog, tracker, engineering notes, case study, and portfolio brief.

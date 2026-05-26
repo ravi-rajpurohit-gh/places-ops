@@ -1,6 +1,5 @@
 streamlit
 duckdb
 pandas
-matplotlib
 altair
 pyyaml

@@ -2,6 +2,7 @@
 
 ## 2026-05-26
 
+- Added a portfolio brief and refreshed case study materials with current architecture, data model, lifecycle timeline, production mapping, and portfolio talking points.
 - Aligned Cost & Risk chart colors with the application palette, added a fixed-height scrollable vendor risk table, moved Current Stack above Production Mirror, and embedded governed insight panels across Cost & Risk, Platform Health, and Dictionary.
 - Expanded the Dictionary tab with business metric definitions and switched dbt model documentation to read from `models/schema.yml` so documentation edits appear without requiring a manifest refresh.
 - Fixed remaining white Streamlit surfaces by moving the app theme config to the dark PlacesOps palette, replacing native dataframes with dark HTML tables, and rendering assistant turns as custom bordered dark message bubbles.
