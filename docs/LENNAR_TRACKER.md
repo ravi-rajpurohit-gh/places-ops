@@ -51,6 +51,7 @@ Use `places-ops` as the Lennar-facing proof project for construction operations,
 | 2026-05-25 | Refreshed DuckDB warehouse from regenerated project/vendor/expense CSVs and verified neutral regions in `fct_project_spend`. |
 | 2026-05-25 | Added changelog, engineering notes, and case study documentation for project lifecycle and checkpoint tracking. |
 | 2026-05-26 | Polished assistant and app UI/UX with domain-aligned colors, dark Streamlit controls, production-style prompt cards, and `ravirajpurohit.com` attribution. |
+| 2026-05-26 | Tightened the dark enterprise theme with readable KPI cards, dark dropdown menus, hidden chart gridlines, and animated governed-insight headings. |
 
 ## Open Questions
 

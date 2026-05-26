@@ -45,6 +45,10 @@ CUSTOM_CSS = f"""
     color: {PALETTE["text"]};
 }}
 
+.stApp header {{
+    background: transparent !important;
+}}
+
 .block-container {{
     max-width: 1440px;
     padding-top: 1.3rem;
@@ -59,6 +63,11 @@ CUSTOM_CSS = f"""
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
 [data-testid="stCaptionContainer"] {{
     color: {PALETTE["muted"]};
+}}
+
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] {{
+    color: {PALETTE["muted"]} !important;
 }}
 
 h1, h2, h3 {{
@@ -93,6 +102,61 @@ div[data-baseweb="select"] > div {{
     border: 1px solid {PALETTE["border"]} !important;
     border-radius: 7px !important;
     color: {PALETTE["text"]} !important;
+}}
+
+div[data-baseweb="select"] span {{
+    color: {PALETTE["text"]} !important;
+}}
+
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+ul[role="listbox"] {{
+    background: {PALETTE["panel_2"]} !important;
+    border: 1px solid {PALETTE["border"]} !important;
+    color: {PALETTE["text"]} !important;
+}}
+
+li[role="option"],
+div[role="option"] {{
+    background: {PALETTE["panel_2"]} !important;
+    color: {PALETTE["text"]} !important;
+}}
+
+li[role="option"]:hover,
+div[role="option"]:hover {{
+    background: rgba(216,166,58,0.16) !important;
+}}
+
+[data-testid="stMetric"] {{
+    background: rgba(18,18,15,0.48);
+    border: 1px solid rgba(48,48,40,0.72);
+    border-radius: 8px;
+    padding: 0.85rem 0.95rem;
+}}
+
+[data-testid="stMetricLabel"] p {{
+    color: {PALETTE["muted"]} !important;
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase;
+}}
+
+[data-testid="stMetricValue"] {{
+    color: {PALETTE["text"]} !important;
+    font-weight: 800 !important;
+    font-size: 1.62rem !important;
+    line-height: 1.12 !important;
+    text-shadow: 0 1px 18px rgba(216,166,58,0.10);
+}}
+
+[data-testid="stMetricValue"] div {{
+    overflow: visible !important;
+    text-overflow: clip !important;
+}}
+
+[data-testid="stMetricDelta"] {{
+    color: {PALETTE["muted"]} !important;
 }}
 
 [data-testid="stButton"] button {{
@@ -174,12 +238,22 @@ div[data-baseweb="select"] > div {{
 
 .panel-title {{
     display: inline-block;
-    color: {PALETTE["gold"]};
     font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.13em;
     text-transform: uppercase;
     margin-bottom: 0.65rem;
+    background: linear-gradient(90deg, {PALETTE["gold"]}, {PALETTE["sage"]}, {PALETTE["gold"]});
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: insight-shine 7s linear infinite;
+}}
+
+@keyframes insight-shine {{
+    0% {{ background-position: 220% center; }}
+    100% {{ background-position: -220% center; }}
 }}
 
 .insight-copy {{
@@ -250,17 +324,31 @@ def style_chart(chart: alt.Chart, height: int = 300) -> alt.Chart:
         chart.properties(height=height)
         .configure_view(strokeWidth=0)
         .configure_axis(
-            gridColor=PALETTE["border"],
-            domainColor=PALETTE["border"],
-            tickColor=PALETTE["border"],
+            grid=False,
+            gridOpacity=0,
+            gridColor="transparent",
+            domain=False,
+            domainOpacity=0,
+            ticks=False,
+            tickOpacity=0,
             labelColor=PALETTE["muted"],
             titleColor=PALETTE["muted"],
             labelAngle=-30,
             labelLimit=150,
         )
+        .configure_axisX(grid=False, gridOpacity=0, domain=False, ticks=False)
+        .configure_axisY(grid=False, gridOpacity=0, domain=False, ticks=False)
         .configure_legend(labelColor=PALETTE["muted"], titleColor=PALETTE["muted"])
         .configure(background="transparent")
     )
+
+
+def x_axis(field: str, title: Optional[str] = None, sort: Optional[str] = None) -> alt.X:
+    return alt.X(field, title=title, sort=sort, axis=alt.Axis(grid=False, domain=False, ticks=False))
+
+
+def y_axis(field: str, title: str) -> alt.Y:
+    return alt.Y(field, title=title, axis=alt.Axis(grid=False, domain=False, ticks=False))
 
 
 @st.cache_data
@@ -429,8 +517,8 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         regional = data.groupby("campus", as_index=False)["amount"].sum()
         regional["region"] = regional["campus"].map(option_label)
         return alt.Chart(regional).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-            x=alt.X("region:N", title=None, sort="-y"),
-            y=alt.Y("amount:Q", title="Spend"),
+            x=x_axis("region:N", sort="-y"),
+            y=y_axis("amount:Q", "Spend"),
             color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]])),
             tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
@@ -438,8 +526,8 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
     if selected_tool == "summarize_vendor_risk":
         vendors = data[["vendor_name", "reliability_score"]].drop_duplicates().sort_values("reliability_score").head(10)
         return alt.Chart(vendors).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-            x=alt.X("vendor_name:N", title=None, sort="y"),
-            y=alt.Y("reliability_score:Q", title="Reliability Score"),
+            x=x_axis("vendor_name:N", sort="y"),
+            y=y_axis("reliability_score:Q", "Reliability Score"),
             color=alt.Color("reliability_score:Q", legend=None, scale=alt.Scale(range=[PALETTE["red"], PALETTE["gold"], PALETTE["sage"]])),
             tooltip=[alt.Tooltip("vendor_name:N", title="Vendor"), alt.Tooltip("reliability_score:Q", title="Reliability", format=".0f")],
         )
@@ -448,8 +536,8 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         projects = project_summary(data)
         delayed = projects[projects["status"] == "Delayed"].sort_values("budget_allocated", ascending=False).head(10)
         return alt.Chart(delayed).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-            x=alt.X("project_name:N", title=None, sort="-y"),
-            y=alt.Y("budget_allocated:Q", title="Delayed Budget Exposure"),
+            x=x_axis("project_name:N", sort="-y"),
+            y=y_axis("budget_allocated:Q", "Delayed Budget Exposure"),
             color=alt.value(PALETTE["red"]),
             tooltip=[
                 alt.Tooltip("project_name:N", title="Project"),
@@ -472,8 +560,8 @@ def assistant_visual(selected_tool: str, data: pd.DataFrame) -> Optional[alt.Cha
         if telemetry.empty:
             return None
         return alt.Chart(telemetry).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-            x=alt.X("node_name:N", title=None, sort="-y"),
-            y=alt.Y("execution_time_s:Q", title="Execution Time (s)"),
+            x=x_axis("node_name:N", sort="-y"),
+            y=y_axis("execution_time_s:Q", "Execution Time (s)"),
             color=alt.Color("node_type:N", title="Node Type"),
             tooltip=[
                 alt.Tooltip("node_name:N", title="Node"),
@@ -593,8 +681,8 @@ with tab_ops:
         region_spend = filtered_df.groupby("campus", as_index=False)["amount"].sum()
         region_spend["region"] = region_spend["campus"].map(option_label)
         chart = alt.Chart(region_spend).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-            x=alt.X("region:N", title=None, sort="-y"),
-            y=alt.Y("amount:Q", title="Spend"),
+            x=x_axis("region:N", sort="-y"),
+            y=y_axis("amount:Q", "Spend"),
             color=alt.Color("region:N", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["blue"], PALETTE["copper"], PALETTE["gold"]])),
             tooltip=[alt.Tooltip("region:N", title="Region"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
         )
@@ -619,8 +707,8 @@ with tab_ops:
 
     st.markdown("## Project Budget Variance")
     variance_chart = alt.Chart(projects.head(12)).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-        x=alt.X("project_name:N", title=None, sort="-y"),
-        y=alt.Y("budget_variance:Q", title="Spend Minus Budget"),
+        x=x_axis("project_name:N", sort="-y"),
+        y=y_axis("budget_variance:Q", "Spend Minus Budget"),
         color=alt.Color("budget_variance:Q", legend=None, scale=alt.Scale(range=[PALETTE["sage"], PALETTE["gold"], PALETTE["red"]])),
         tooltip=[
             alt.Tooltip("project_name:N", title="Project"),
@@ -657,8 +745,8 @@ with tab_cost:
     st.markdown("## Daily Spend Trend")
     trend = filtered_df.groupby("expense_date", as_index=False)["amount"].sum()
     trend_chart = alt.Chart(trend).mark_line(point=True, strokeWidth=2.5).encode(
-        x=alt.X("expense_date:T", title="Date"),
-        y=alt.Y("amount:Q", title="Daily Spend"),
+        x=x_axis("expense_date:T", title="Date"),
+        y=y_axis("amount:Q", "Daily Spend"),
         color=alt.value(PALETTE["gold"]),
         tooltip=[alt.Tooltip("expense_date:T", title="Date"), alt.Tooltip("amount:Q", title="Spend", format="$,.0f")],
     )

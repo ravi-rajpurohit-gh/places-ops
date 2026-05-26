@@ -34,6 +34,8 @@ The app stays as one Streamlit surface with tabs. That keeps business metrics, v
 
 The visual system uses a warm, restrained construction/corporate analytics palette instead of generic Streamlit defaults. Native controls, assistant prompts, chat input, sidebar filters, and insight panels are styled consistently so the product reads like an internal operations analytics application rather than a hobby dashboard.
 
+The app intentionally remains dark because the product surface combines executive operations, platform health, and governed assistant workflows. The final theme removes bright chart gridlines, uses dark dropdown menus, makes KPI values readable in card surfaces, and highlights governed insight labels with a subtle left-to-right sheen.
+
 ### Governed Insights Assistant
 
 The assistant is a function router, not a free-form SQL generator. It maps natural-language questions to approved analytical routes, returns deterministic answers, attaches contextual visuals, and shows trace metadata. This demonstrates the direction of AI-powered dashboards while avoiding API keys, hosted quota limits, local model setup, and hallucinated metric definitions.
