@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import html
 import json
 import os
 import time
@@ -133,6 +134,14 @@ div[role="option"]:hover,
     color: {PALETTE["text"]} !important;
 }}
 
+[role="listbox"] [role="option"][aria-selected="true"],
+[data-baseweb="menu"] [role="option"][aria-selected="true"],
+[role="listbox"] [role="option"]:focus,
+[data-baseweb="menu"] [role="option"]:focus {{
+    background: rgba(216,166,58,0.22) !important;
+    color: {PALETTE["text"]} !important;
+}}
+
 [data-testid="stMetric"] {{
     background: rgba(18,18,15,0.48);
     border: 1px solid rgba(48,48,40,0.72);
@@ -197,6 +206,15 @@ div[role="option"]:hover,
     color: {PALETTE["text"]} !important;
 }}
 
+textarea,
+input,
+[data-baseweb="input"] > div,
+[data-baseweb="textarea"] > div {{
+    background: {PALETTE["panel_2"]} !important;
+    color: {PALETTE["text"]} !important;
+    border-color: rgba(216,166,58,0.34) !important;
+}}
+
 [data-testid="stChatInput"] textarea::placeholder {{
     color: {PALETTE["muted"]} !important;
 }}
@@ -222,6 +240,50 @@ div[role="option"]:hover,
 
 [data-testid="stDataFrame"] div {{
     color: {PALETTE["text"]};
+}}
+
+.po-table-wrap {{
+    border: 1px solid rgba(216,166,58,0.26);
+    border-radius: 8px;
+    background: rgba(18,18,15,0.82);
+    overflow-x: auto;
+    margin: 0.35rem 0 1rem;
+}}
+
+.po-table {{
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 540px;
+    color: {PALETTE["text"]};
+    font-size: 0.86rem;
+}}
+
+.po-table thead tr {{
+    background: rgba(216,166,58,0.13);
+}}
+
+.po-table th {{
+    color: {PALETTE["gold"]};
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    padding: 0.75rem 0.85rem;
+    text-align: left;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(216,166,58,0.24);
+}}
+
+.po-table td {{
+    color: {PALETTE["text"]};
+    padding: 0.68rem 0.85rem;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+}}
+
+.po-table tbody tr:nth-child(even) {{
+    background: rgba(255,255,255,0.025);
+}}
+
+.po-table tbody tr:hover {{
+    background: rgba(216,166,58,0.10);
 }}
 
 label,
@@ -355,6 +417,38 @@ label,
 .assistant-intro span {{
     color: {PALETTE["muted"]};
 }}
+
+.assistant-message {{
+    border: 1px solid rgba(216,166,58,0.32);
+    border-radius: 8px;
+    padding: 0.95rem 1rem;
+    margin: 0.8rem 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 14px 32px rgba(0,0,0,0.18);
+}}
+
+.assistant-message.user {{
+    background: linear-gradient(180deg, rgba(216,166,58,0.16), rgba(18,18,15,0.84));
+    margin-left: 28%;
+}}
+
+.assistant-message.ai {{
+    background: linear-gradient(180deg, rgba(184,196,138,0.11), rgba(18,18,15,0.88));
+    margin-right: 16%;
+}}
+
+.assistant-role {{
+    color: {PALETTE["gold"]};
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.45rem;
+}}
+
+.assistant-body {{
+    color: {PALETTE["text"]};
+    line-height: 1.55;
+}}
 </style>
 """
 
@@ -393,6 +487,16 @@ def style_chart(chart: alt.Chart, height: int = 300) -> alt.Chart:
         .configure_legend(labelColor=PALETTE["muted"], titleColor=PALETTE["muted"])
         .configure(background="transparent")
     )
+
+
+def render_dark_table(data: pd.DataFrame) -> None:
+    table = data.copy()
+    html_table = table.to_html(index=False, escape=True, classes="po-table", border=0)
+    st.markdown(f'<div class="po-table-wrap">{html_table}</div>', unsafe_allow_html=True)
+
+
+def safe_html(text: object) -> str:
+    return html.escape(str(text)).replace("\n", "<br>")
 
 
 def x_axis(field: str, title: Optional[str] = None, sort: Optional[str] = None, label_angle: int = -45) -> alt.X:
@@ -648,24 +752,34 @@ def render_trace(metadata: dict[str, object]) -> None:
 
 
 def render_assistant_turn(message: dict[str, object], data: pd.DataFrame) -> None:
-    content = str(message["content"]).replace("$", "\\$")
+    content = safe_html(message["content"])
     if message["role"] == "user":
-        _, user_col = st.columns([0.28, 0.72])
-        with user_col:
-            with st.container(border=True):
-                st.caption("You")
-                st.markdown(content)
+        st.markdown(
+            f"""
+<div class="assistant-message user">
+  <div class="assistant-role">You</div>
+  <div class="assistant-body">{content}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
         return
 
     usage = message.get("usage")
-    with st.container(border=True):
-        st.caption("PlacesOps Analyst · Governed visual analysis")
-        st.markdown(content)
-        if isinstance(usage, dict):
-            chart = assistant_visual(str(usage["selected_tool"]), data)
-            if chart is not None:
-                st.altair_chart(style_chart(chart, height=300), use_container_width=True)
-            render_trace(usage)
+    st.markdown(
+        f"""
+<div class="assistant-message ai">
+  <div class="assistant-role">PlacesOps Analyst · Governed Visual Analysis</div>
+  <div class="assistant-body">{content}</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+    if isinstance(usage, dict):
+        chart = assistant_visual(str(usage["selected_tool"]), data)
+        if chart is not None:
+            st.altair_chart(style_chart(chart, height=300), use_container_width=True)
+        render_trace(usage)
 
 
 st.set_page_config(page_title="PlacesOps", layout="wide", initial_sidebar_state="expanded")
@@ -799,11 +913,7 @@ with tab_cost:
         threshold = st.slider("Reliability Threshold", min_value=70, max_value=100, value=85, step=1)
         vendors = filtered_df[["vendor_name", "reliability_score"]].drop_duplicates()
         risky_vendors = vendors[vendors["reliability_score"] < threshold].sort_values("reliability_score")
-        st.dataframe(
-            risky_vendors.rename(columns={"vendor_name": "Vendor", "reliability_score": "Reliability Score"}),
-            use_container_width=True,
-            hide_index=True,
-        )
+        render_dark_table(risky_vendors.rename(columns={"vendor_name": "Vendor", "reliability_score": "Reliability Score"}))
 
     st.markdown("## Daily Spend Trend")
     trend = filtered_df.groupby("expense_date", as_index=False)["amount"].sum()
@@ -827,7 +937,7 @@ with tab_health:
         st.warning("dbt run_results.json not found. Run dbt build locally to refresh pipeline telemetry.")
     else:
         st.markdown("## Model And Test Telemetry")
-        st.dataframe(
+        render_dark_table(
             telemetry.rename(
                 columns={
                     "node_type": "Node Type",
@@ -835,9 +945,7 @@ with tab_health:
                     "status": "Status",
                     "execution_time_s": "Execution Time (s)",
                 }
-            ),
-            use_container_width=True,
-            hide_index=True,
+            )
         )
         st.markdown("## Execution Bottlenecks")
         st.altair_chart(style_chart(assistant_visual("summarize_pipeline_health", filtered_df), height=320), use_container_width=True)
@@ -859,7 +967,7 @@ with tab_dictionary:
                 if description:
                     columns.append({"Column": column_name, "Description": description})
             if columns:
-                st.dataframe(pd.DataFrame(columns), use_container_width=True, hide_index=True)
+                render_dark_table(pd.DataFrame(columns))
             else:
                 st.caption("No column-level documentation available.")
 

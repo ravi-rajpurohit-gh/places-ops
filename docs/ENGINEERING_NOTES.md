@@ -38,6 +38,8 @@ The app intentionally remains dark because the product surface combines executiv
 
 The 2026-05-26 consistency pass tightened the remaining native Streamlit surfaces: dropdown hover states now stay in the dark palette, dataframes and dictionary tables sit inside dark framed surfaces, assistant message boundaries are more visible, and the main footer uses a centered portfolio-only attribution. Executive headline metrics were also adjusted from raw negative variance to positive remaining budget so the first scan reads like an operations command center instead of an accounting export.
 
+A follow-up QA pass found the Streamlit theme file was still forcing white backgrounds. The app theme config now uses the same dark PlacesOps palette as `CUSTOM_CSS`, and the table/chat surfaces use explicit HTML components where native Streamlit controls were not reliably themeable.
+
 ### Governed Insights Assistant
 
 The assistant is a function router, not a free-form SQL generator. It maps natural-language questions to approved analytical routes, returns deterministic answers, attaches contextual visuals, and shows trace metadata. This demonstrates the direction of AI-powered dashboards while avoiding API keys, hosted quota limits, local model setup, and hallucinated metric definitions.
@@ -67,6 +69,7 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 - Confirm regions are neutral operating regions, not company-specific campuses
 - Confirm assistant returns text, a contextual chart, and analysis trace metadata
 - Confirm dbt artifacts show passing model/test results
+- Confirm dropdowns, tables, dictionary sections, assistant messages, and chat input do not fall back to white native Streamlit surfaces
 
 ## Checkpoint Record
 

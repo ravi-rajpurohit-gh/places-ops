@@ -2,6 +2,7 @@
 
 ## 2026-05-26
 
+- Fixed remaining white Streamlit surfaces by moving the app theme config to the dark PlacesOps palette, replacing native dataframes with dark HTML tables, and rendering assistant turns as custom bordered dark message bubbles.
 - Refined the PlacesOps theme consistency pass with centered portfolio-only footer attribution, visible footer divider, dark dropdown hover states, darker table/data dictionary surfaces, stronger assistant chat boundaries, and readable chat input styling.
 - Reworked Executive Ops KPI semantics so the headline card shows `Remaining Budget` instead of a negative raw variance while retaining spend-minus-budget analysis in the project-level chart.
 - Added the current local project stack to the sidebar beside the production mirror and rotated chart axis labels for easier scanning.
