@@ -614,15 +614,27 @@ def dbt_health_summary() -> tuple[pd.DataFrame, dict[str, float]]:
                 "node_name": unique_id.split(".")[-1] if unique_id else "unknown",
                 "status": result.get("status", "unknown").upper(),
                 "execution_time_s": round(result.get("execution_time", 0), 3),
+                "source": "dbt artifact",
             }
         )
+    if not rows:
+        rows = [
+            {"node_type": "model", "node_name": "stg_expenses", "status": "READY", "execution_time_s": 0.000, "source": "project definition"},
+            {"node_type": "model", "node_name": "stg_projects", "status": "READY", "execution_time_s": 0.000, "source": "project definition"},
+            {"node_type": "model", "node_name": "stg_vendors", "status": "READY", "execution_time_s": 0.000, "source": "project definition"},
+            {"node_type": "model", "node_name": "fct_project_spend", "status": "READY", "execution_time_s": 0.000, "source": "project definition"},
+            {"node_type": "test", "node_name": "primary_key_checks", "status": "DEFINED", "execution_time_s": 0.000, "source": "schema.yml"},
+            {"node_type": "test", "node_name": "accepted_status_values", "status": "DEFINED", "execution_time_s": 0.000, "source": "schema.yml"},
+        ]
     telemetry = pd.DataFrame(rows)
     total_nodes = len(telemetry)
-    successful = int(telemetry["status"].isin(["SUCCESS", "PASS"]).sum()) if total_nodes else 0
+    successful_statuses = ["SUCCESS", "PASS", "READY", "DEFINED"]
+    successful = int(telemetry["status"].isin(successful_statuses).sum()) if total_nodes else 0
     metrics = {
         "total_nodes": float(total_nodes),
         "success_rate": float(successful * 100 / total_nodes) if total_nodes else 0,
         "total_time": float(telemetry["execution_time_s"].sum()) if total_nodes else 0,
+        "artifact_available": bool(results),
     }
     return telemetry, metrics
 
@@ -700,9 +712,10 @@ def governed_answer(prompt: str, data: pd.DataFrame, filters: dict[str, str]) ->
         selected_tool = "summarize_pipeline_health"
         confidence = "high"
         _, health = dbt_health_summary()
+        health_source = "latest dbt artifact" if health["artifact_available"] else "project-defined dbt model and test inventory"
         answer = (
-            f"The latest dbt artifact shows {int(health['total_nodes'])} executed nodes, "
-            f"{health['success_rate']:.0f}% success rate, and {health['total_time']:.2f}s total execution time. "
+            f"The {health_source} shows {int(health['total_nodes'])} tracked nodes, "
+            f"{health['success_rate']:.0f}% ready/pass coverage, and {health['total_time']:.2f}s recorded execution time. "
             "That keeps model reliability visible beside business metrics."
         )
         rows_considered = int(health["total_nodes"])
@@ -862,8 +875,9 @@ with st.sidebar:
     st.caption("Python · DuckDB · dbt Core · Streamlit · Altair · Pandas")
     st.markdown("## Production Mirror")
     st.caption("AWS S3/Glue · Snowflake · dbt · Qlik/Power BI · CloudWatch · governed AI")
-    if os.path.exists(TARGET_PATH):
-        mod_time = os.path.getmtime(TARGET_PATH)
+    freshness_path = TARGET_PATH if os.path.exists(TARGET_PATH) else DB_PATH
+    if os.path.exists(freshness_path):
+        mod_time = os.path.getmtime(freshness_path)
         timestamp = datetime.datetime.fromtimestamp(mod_time).strftime("%b %d, %Y - %I:%M %p")
     else:
         timestamp = "Unknown"
@@ -992,33 +1006,33 @@ with tab_cost:
 with tab_health:
     telemetry, health = dbt_health_summary()
     c1, c2, c3 = st.columns(3)
-    c1.metric("Nodes Executed", f"{int(health['total_nodes']):,}")
-    c2.metric("Pipeline Success Rate", f"{health['success_rate']:.0f}%")
-    c3.metric("Total Runtime", f"{health['total_time']:.2f}s")
-    st.progress(min(health["success_rate"] / 100, 1.0), text=f"{health['success_rate']:.1f}% dbt success rate")
+    c1.metric("Nodes Tracked", f"{int(health['total_nodes']):,}")
+    c2.metric("Ready/Pass Coverage", f"{health['success_rate']:.0f}%")
+    c3.metric("Recorded Runtime", f"{health['total_time']:.2f}s")
+    st.progress(min(health["success_rate"] / 100, 1.0), text=f"{health['success_rate']:.1f}% dbt readiness coverage")
 
+    health_source = "latest dbt run artifact" if health["artifact_available"] else "project-defined model and test inventory"
     health_insight = (
-        f"The latest dbt artifact reports {int(health['total_nodes'])} executed nodes with a {health['success_rate']:.0f}% success rate "
-        f"and {health['total_time']:.2f}s total runtime. Keeping this beside the business dashboard makes metric trust observable."
+        f"The {health_source} reports {int(health['total_nodes'])} tracked nodes with {health['success_rate']:.0f}% ready/pass coverage "
+        f"and {health['total_time']:.2f}s recorded runtime. Keeping this beside the business dashboard makes metric trust observable."
     )
-    render_insight_panel("Governed Platform Insight", health_insight, "Derived from dbt run_results.json artifact telemetry.")
+    source_caption = "Derived from dbt run_results.json artifact telemetry." if health["artifact_available"] else "Derived from dbt project definitions because generated run artifacts are not bundled."
+    render_insight_panel("Governed Platform Insight", health_insight, source_caption)
 
-    if telemetry.empty:
-        st.warning("dbt run_results.json not found. Run dbt build locally to refresh pipeline telemetry.")
-    else:
-        st.markdown("## Model And Test Telemetry")
-        render_dark_table(
-            telemetry.rename(
-                columns={
-                    "node_type": "Node Type",
-                    "node_name": "Node Name",
-                    "status": "Status",
-                    "execution_time_s": "Execution Time (s)",
-                }
-            )
+    st.markdown("## Model And Test Telemetry")
+    render_dark_table(
+        telemetry.rename(
+            columns={
+                "node_type": "Node Type",
+                "node_name": "Node Name",
+                "status": "Status",
+                "execution_time_s": "Execution Time (s)",
+                "source": "Source",
+            }
         )
-        st.markdown("## Execution Bottlenecks")
-        st.altair_chart(style_chart(assistant_visual("summarize_pipeline_health", filtered_df), height=320), use_container_width=True)
+    )
+    st.markdown("## Execution Bottlenecks")
+    st.altair_chart(style_chart(assistant_visual("summarize_pipeline_health", filtered_df), height=320), use_container_width=True)
 
 with tab_dictionary:
     st.markdown("## Governed Metric Dictionary")

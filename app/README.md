@@ -41,4 +41,5 @@ streamlit run app.py
 
 - `target/`, `logs/`, `.user.yml`, and local dbt packages are ignored because they are machine-generated local artifacts.
 - `places_database.duckdb` is intentionally tracked so the public app can load a sample warehouse immediately.
+- Platform Health falls back to project-defined model/test inventory when generated dbt run artifacts are not bundled.
 - Re-run `dbt build --profiles-dir .` after changing model SQL or tests.

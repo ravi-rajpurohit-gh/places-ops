@@ -40,7 +40,7 @@ The Streamlit app serves two audiences:
 
 - **Executive Operations:** portfolio KPIs for projects, total spend, budget variance, delayed-project exposure, regional spend, and executive interpretation.
 - **Cost & Vendor Risk:** cost categories, daily spend trend, vendor reliability thresholding, and operational risk queues.
-- **Platform Health:** dbt run artifacts, execution telemetry, success rate, model/test observability, and governed platform insight.
+- **Platform Health:** dbt artifact telemetry when available, project-defined model/test inventory as a public-app fallback, and governed platform insight.
 - **Dictionary:** governed business metric definitions plus current dbt model and column documentation from `models/schema.yml`.
 - **Insights Assistant:** governed natural-language analysis over portfolio, vendor, delayed exposure, category, regional, and pipeline-health questions with contextual charts and trace metadata.
 
