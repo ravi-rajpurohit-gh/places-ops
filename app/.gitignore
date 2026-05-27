@@ -1,5 +1,7 @@
 dbt_packages/
-target/
+target/*
+!target/
+!target/run_results.json
 logs/
 .DS_Store
 .user.yml

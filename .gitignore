@@ -11,7 +11,9 @@ env/
 .streamlit/secrets.toml
 app/.user.yml
 app/logs/
-app/target/
+app/target/*
+!app/target/
+!app/target/run_results.json
 app/dbt_packages/
 app/.DS_Store
 app/models/.DS_Store
