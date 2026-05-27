@@ -44,11 +44,11 @@ timeline
 | --- | --- | --- |
 | Product Framing | Defined the analytics hub vision, users, business metrics, and production mapping. | Root README and app README. |
 | Data Generation | Created privacy-safe project, vendor, and expense records. | `generate_mock_data.py` and `raw_data/`. |
-| Data Modeling | Built staging models and a project spend fact mart. | `apple_places/models/`. |
+| Data Modeling | Built staging models and a project spend fact mart. | `app/models/`. |
 | Quality & Observability | Added dbt tests, run artifacts, success-rate metrics, and runtime telemetry. | `schema.yml`, `target/run_results.json`, Platform Health tab. |
 | Business Analytics | Added executive KPIs, region spend, budget variance, delayed exposure, cost categories, and vendor reliability risk. | Streamlit app tabs. |
-| Governed AI Workflow | Added natural-language routing to approved analytical functions with chart responses and trace metadata. | Insights Assistant tab in `apple_places/app.py`. |
-| Cross-Tab AI Readouts | Embedded governed narrative insights into executive, cost/risk, platform, and dictionary workflows. | `render_insight_panel` in `apple_places/app.py`. |
+| Governed AI Workflow | Added natural-language routing to approved analytical functions with chart responses and trace metadata. | Insights Assistant tab in `app/app.py`. |
+| Cross-Tab AI Readouts | Embedded governed narrative insights into executive, cost/risk, platform, and dictionary workflows. | `render_insight_panel` in `app/app.py`. |
 | UX Theming | Styled the app around a warm construction/corporate analytics visual system with dark controls and production-style assistant prompts. | `CUSTOM_CSS` and Streamlit app surface. |
 | Documentation | Added tracker, engineering notes, changelog, and case study checkpoint. | `docs/` and `CHANGELOG.md`. |
 

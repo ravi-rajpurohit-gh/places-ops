@@ -65,8 +65,8 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 ## Review Checklist
 
 - Generate data: `python generate_mock_data.py`
-- Build models and artifacts: `cd apple_places && dbt build --profiles-dir .`
-- Run app: `streamlit run apple_places/app.py`
+- Build models and artifacts: `cd app && dbt build --profiles-dir .`
+- Run app: `streamlit run app/app.py`
 - Confirm tabs render: Executive Ops, Cost & Risk, Platform Health, Dictionary, Assistant
 - Confirm regions are neutral operating regions, not company-specific campuses
 - Confirm assistant returns text, a contextual chart, and analysis trace metadata
@@ -79,7 +79,7 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 
 - [Case study](CASE_STUDY.md) includes the full lifecycle, decision log, architecture, data model, validation strategy, and production evolution.
 - [Portfolio brief](PORTFOLIO_BRIEF.md) is the shorter version for adapting into `ravirajpurohit.com`.
-- [Lennar tracker](LENNAR_TRACKER.md) preserves goals, decisions, progress, and role-alignment notes separately from the public-facing case study narrative.
+- [Enterprise Analytics tracker](PROJECT_TRACKER.md) preserves goals, decisions, progress, and role-alignment notes separately from the public-facing case study narrative.
 
 ## Checkpoint Record
 

@@ -1,3 +1,22 @@
 .DS_Store
 logs/
 raw_data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Streamlit/dbt local state
+.streamlit/secrets.toml
+app/.user.yml
+app/logs/
+app/target/
+app/dbt_packages/
+app/.DS_Store
+app/models/.DS_Store
+
+# Keep the checked-in DuckDB sample warehouse for the public app,
+# but ignore transient DuckDB sidecar files.
+*.duckdb.wal
+*.duckdb.tmp

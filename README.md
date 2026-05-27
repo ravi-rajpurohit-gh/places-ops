@@ -4,7 +4,7 @@
 ![dbt](https://img.shields.io/badge/dbt-FF694B?style=for-the-badge&logo=dbt&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 
-**Live Demo:** [Live App](https://places-ops.streamlit.app/)
+**Live App:** [places-ops.streamlit.app](https://places-ops.streamlit.app/)
 
 PlacesOps is a lightweight, production-minded proof of concept for construction and corporate operations analytics. It models project, vendor, budget, and expense data into a dashboard that helps business stakeholders understand budget variance, delayed-project exposure, cost categories, and vendor reliability while giving data engineers visibility into pipeline health.
 
@@ -53,11 +53,9 @@ The project demonstrates common enterprise analytics patterns:
 - engineering telemetry that makes pipeline reliability visible,
 - and governed AI-style access to trusted metrics without relying on external API quotas.
 
-## Why This Maps to Lennar
+## Production Relevance
 
-Lennar's Data Engineer II role emphasizes AWS, Snowflake, dbt, SQL/Python, Qlik, business insights, reporting platforms, cost efficiency, cross-functional analytics, and AI initiatives. The team context also includes corporate analytics, finance, HR, legal, marketing, cost optimization, MCPs, in-house AI products, and AI-powered dashboards.
-
-PlacesOps mirrors that environment in a focused local prototype:
+PlacesOps mirrors the kind of analytics platform work common in large operating companies:
 
 - construction and budget data are modeled into business-ready metrics,
 - vendor and delayed-project risk are surfaced for operational decision-making,
@@ -110,13 +108,13 @@ flowchart LR
 git clone https://github.com/ravi-rajpurohit-gh/places-ops.git
 cd places-ops
 python generate_mock_data.py
-cd apple_places
+cd app
 dbt build --profiles-dir .
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Track goals, decisions, lifecycle, and progress in [docs/LENNAR_TRACKER.md](docs/LENNAR_TRACKER.md), [docs/CASE_STUDY.md](docs/CASE_STUDY.md), [docs/PORTFOLIO_BRIEF.md](docs/PORTFOLIO_BRIEF.md), and [docs/ENGINEERING_NOTES.md](docs/ENGINEERING_NOTES.md).
+Track goals, decisions, lifecycle, and progress in [docs/PROJECT_TRACKER.md](docs/PROJECT_TRACKER.md), [docs/CASE_STUDY.md](docs/CASE_STUDY.md), [docs/PORTFOLIO_BRIEF.md](docs/PORTFOLIO_BRIEF.md), and [docs/ENGINEERING_NOTES.md](docs/ENGINEERING_NOTES.md).
 
 ## Project Checkpoint
 
@@ -130,10 +128,6 @@ As of 2026-05-26, PlacesOps is in a portfolio-ready checkpoint state:
 - governed insight panels appear across Executive Operations, Cost & Risk, Platform Health, and Dictionary,
 - the Dictionary tab includes business metric definitions plus current `schema.yml` model documentation,
 - tracker, case study, portfolio brief, engineering notes, changelog, root README, and app README are aligned.
-
-## 30-Second Recruiter Pitch
-
-> I recently built a dbt + Streamlit operations analytics prototype around construction projects, vendors, budgets, and pipeline health. It felt close to the cross-functional analytics work Connor described: taking messy operational data, modeling it into trusted business metrics, and giving both business users and engineers visibility into performance and reliability.
 
 ## What This Demonstrates About My Approach
 
