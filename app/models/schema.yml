@@ -2,71 +2,157 @@ version: 2
 
 models:
   - name: stg_projects
-    description: "Staging model for construction and corporate operations projects."
+    description: "Cleaned, typed project records. Grain: one row per project."
     columns:
       - name: project_id
         description: "Primary key for projects."
-        tests:
+        data_tests:
           - unique
           - not_null
       - name: project_name
         description: "Name of the facility upgrade or construction project."
+        data_tests:
+          - not_null
       - name: campus
         description: "Operating region or business area where the project is located."
+        data_tests:
+          - not_null
       - name: budget_allocated
         description: "Approved budget allocated to the project."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
       - name: status
         description: "Current status of the construction project."
-        tests:
+        data_tests:
           - accepted_values:
-              values: ["In Progress", "Completed", "Delayed"]
+              arguments:
+                values: ["In Progress", "Completed", "Delayed"]
 
   - name: stg_vendors
-    description: "Contractor and vendor reliability dimension."
+    description: "Cleaned vendor records. Grain: one row per vendor."
     columns:
       - name: vendor_id
         description: "Primary key for the vendor."
-        tests:
+        data_tests:
           - unique
           - not_null
       - name: vendor_name
         description: "The name of the contracted vendor."
+        data_tests:
+          - not_null
       - name: reliability_score
-        description: "Internal scoring metric (0-100) assessing vendor performance."
+        description: "Internal scoring metric from 0 to 100 assessing vendor performance."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
 
   - name: stg_expenses
-    description: "Raw daily capital expenditure records tracking individual vendor payments."
+    description: "Cleaned capital expenditure records. Grain: one row per expense line."
     columns:
       - name: expense_id
         description: "Primary key for the expense line item."
-        tests:
+        data_tests:
           - unique
+          - not_null
+      - name: project_id
+        description: "Foreign key to the project receiving the expense."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_projects')
+                field: project_id
+      - name: vendor_id
+        description: "Foreign key to the vendor paid for the expense."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_vendors')
+                field: vendor_id
+      - name: expense_date
+        description: "Date when the expense was posted."
+        data_tests:
           - not_null
       - name: amount
         description: "Dollar amount of the logged expense."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
       - name: category
-        description: "Type of expense (e.g., Materials, Labor, Permits)."
+        description: "Normalized expense category."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Materials", "Labor", "Permits", "Equipment"]
+
+  - name: int_project_spend
+    description: "Reusable project-level spend aggregate. Grain: one row per project with at least one expense."
+    columns:
+      - name: project_id
+        description: "Primary key and foreign key to the project."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_projects')
+                field: project_id
+      - name: total_spend
+        description: "Sum of all expense lines associated with the project."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
 
   - name: fct_project_spend
-    description: "Core fact table joining daily expenses with project and vendor dimensions for downstream dashboarding."
+    description: "Dashboard-ready expense fact. Grain: one row per expense line enriched with current project and vendor attributes."
     columns:
       - name: expense_id
         description: "Primary key."
-        tests:
+        data_tests:
           - unique
           - not_null
+      - name: project_id
+        description: "Foreign key to the associated project."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_projects')
+                field: project_id
+      - name: vendor_id
+        description: "Foreign key to the associated vendor."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_vendors')
+                field: vendor_id
       - name: expense_date
         description: "Date when the expense was posted."
       - name: amount
         description: "Capital spent on this specific expense line."
-        tests:
+        data_tests:
           - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
       - name: category
-        description: "Spend category for the expense line, such as materials, labor, equipment, or permits."
+        description: "Spend category for the expense line."
       - name: project_name
         description: "Project associated with the expense line."
       - name: campus
-        description: "The operating region or business area where the project is located."
+        description: "Operating region or business area where the project is located."
       - name: status
         description: "Current project delivery status at the time the mart is built."
       - name: budget_allocated
@@ -75,3 +161,59 @@ models:
         description: "Vendor or contractor associated with the expense line."
       - name: reliability_score
         description: "Vendor reliability score used for procurement and project risk review."
+
+  - name: mart_project_performance
+    description: "Project-level budget and delivery performance mart. Grain: one row per project, including projects without expenses."
+    columns:
+      - name: project_id
+        description: "Primary key for the project performance mart."
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_projects')
+                field: project_id
+      - name: budget_allocated
+        description: "Approved project budget."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
+      - name: total_spend
+        description: "Total posted spend for the project."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
+      - name: budget_remaining
+        description: "Approved budget less total posted spend; negative values identify over-budget projects."
+      - name: budget_utilization_ratio
+        description: "Total spend divided by approved budget, calculated with the safe_divide Jinja macro."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
+      - name: budget_health_status
+        description: "Reusable macro-driven classification using the project budget warning threshold."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["Missing Budget", "Over Budget", "At Risk", "On Track"]
+      - name: expense_count
+        description: "Number of posted expense lines for the project."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0
+      - name: vendor_count
+        description: "Number of distinct vendors paid for the project."
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments:
+                min_value: 0

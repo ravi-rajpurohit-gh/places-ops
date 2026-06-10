@@ -1,6 +1,6 @@
 # Engineering Notes
 
-Last updated: 2026-05-26
+Last updated: 2026-06-10
 
 ## Purpose
 
@@ -20,11 +20,13 @@ The project is intentionally small, but it mirrors production habits:
 
 ### Neutral Operating Data
 
-The generated data uses privacy-safe operating regions, projects, vendors, budgets, expenses, and statuses. It avoids company-private data and keeps the public project usable as a general construction/corporate analytics case study.
+The generated data uses privacy-safe operating regions, projects, vendors, budgets, expenses, and statuses. It avoids company-private data and supports reproducible fixtures through explicit random-seed and as-of-date arguments.
 
 ### DuckDB And dbt Core
 
 DuckDB keeps local iteration fast, while dbt Core provides the production modeling pattern: staging layers, mart creation, tests, artifacts, and documentation. A production version would move the same modeling pattern into Snowflake with dbt Cloud/Core, CI, and orchestrated refreshes.
+
+The current DAG separates typed staging views, a reusable intermediate aggregate, an expense-grain fact, and a project-performance mart. Reusable Jinja macros govern safe division and budget-health classification, while a custom generic range test, referential tests, a reconciliation assertion, an SCD Type 2 snapshot, an exposure, and pull-request CI extend the project beyond basic model execution.
 
 ### Single Product Surface
 
@@ -70,25 +72,27 @@ Pipeline success, dbt node runtime, tests, and artifact visibility are shown in 
 - Confirm tabs render: Executive Ops, Cost & Risk, Platform Health, Dictionary, Assistant
 - Confirm regions are neutral operating regions, not company-specific campuses
 - Confirm assistant returns text, a contextual chart, and analysis trace metadata
-- Confirm dbt artifacts show passing model/test results
+- Confirm dbt artifacts show `PASS=59 WARN=0 ERROR=0 SKIP=0`
 - Confirm dropdowns, tables, dictionary sections, assistant messages, and chat input do not fall back to white native Streamlit surfaces
 - Confirm Cost & Risk uses the shared chart palette and the vendor reliability table scrolls within a fixed-height frame
 - Confirm Dictionary shows governed metric definitions plus current schema.yml model documentation
 
-## Portfolio Materials
+## Supporting Documentation
 
 - [Case study](CASE_STUDY.md) includes the full lifecycle, decision log, architecture, data model, validation strategy, and production evolution.
-- [Portfolio brief](PORTFOLIO_BRIEF.md) is the shorter version for adapting into `ravirajpurohit.com`.
-- [Enterprise Analytics tracker](PROJECT_TRACKER.md) preserves goals, decisions, progress, and role-alignment notes separately from the public-facing case study narrative.
+- [System overview](SYSTEM_OVERVIEW.md) provides a concise architecture, data model, lifecycle, and review summary.
+- [dbt implementation guide](DBT_IMPLEMENTATION_GUIDE.md) explains the transformation, testing, snapshot, lineage, CI, and Snowflake deployment decisions.
+- [Project tracker](PROJECT_TRACKER.md) preserves goals, decisions, progress, and open engineering questions.
 
 ## Checkpoint Record
 
-2026-05-26 checkpoint:
+2026-06-10 checkpoint:
 
 - Streamlit app enhanced into a corporate analytics command center.
 - DuckDB warehouse refreshed with neutral generated regions.
-- dbt artifact log shows `PASS=14 WARN=0 ERROR=0 SKIP=0`.
+- dbt artifact log shows `PASS=59 WARN=0 ERROR=0 SKIP=0 NO-OP=1 TOTAL=60`.
+- Layered dbt DAG includes 6 models, reusable Jinja macros, 52 data tests, an SCD Type 2 snapshot, a dashboard exposure, and pull-request CI.
 - Browser smoke tests confirmed executive, cost/risk, platform health, dictionary, dropdown, table, and assistant surfaces render correctly.
 - Governed insight panels appear across the dashboard, not only in the assistant tab.
 - Dictionary displays business metric definitions and current `schema.yml` model documentation.
-- Documentation updated across README, app README, changelog, tracker, engineering notes, case study, and portfolio brief.
+- Documentation updated across README, app README, changelog, tracker, implementation guide, engineering notes, and case study.

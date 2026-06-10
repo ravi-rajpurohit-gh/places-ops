@@ -1,4 +1,4 @@
-# PlacesOps Portfolio Brief
+# PlacesOps System Overview
 
 ## One-Line Summary
 
@@ -8,7 +8,7 @@ PlacesOps is a construction and corporate analytics command center that turns pr
 
 Operations analytics often fails when business dashboards, data quality, documentation, and platform health are treated as separate concerns. PlacesOps treats them as one product surface: the same app that shows spend, delayed exposure, cost categories, and vendor reliability also shows dbt health, metric definitions, model documentation, and governed natural-language analysis.
 
-The project is compact by design, but the architecture mirrors production data engineering patterns: source-aligned staging models, a dashboard-ready fact mart, documented metrics, tests, artifact observability, and an AI layer constrained to trusted definitions.
+The project is compact by design, but the architecture mirrors production data engineering patterns: source-aligned staging models, a reusable intermediate aggregate, expense and project marts, Jinja macros, tested data contracts, artifact observability, and an AI layer constrained to trusted definitions.
 
 ## Tech Stack
 
@@ -94,10 +94,10 @@ timeline
     2026-05-26 : Completed production theme and UI consistency pass
                : Added governed readouts across dashboard tabs
                : Expanded metric dictionary and model documentation
-               : Prepared portfolio-ready architecture and lifecycle documentation
+               : Published architecture and lifecycle documentation
 ```
 
-## Portfolio Talking Points
+## Technical Review Points
 
 - Built an end-to-end analytics product, not only a dashboard.
 - Modeled operational data into a trusted fact mart with dbt.

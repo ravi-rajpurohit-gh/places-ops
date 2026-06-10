@@ -1,0 +1,14 @@
+version: 2
+
+snapshots:
+  - name: project_status_snapshot
+    description: "SCD Type 2 history for changes to project delivery status and approved budget."
+    columns:
+      - name: project_id
+        description: "Business key for the project."
+        data_tests:
+          - not_null
+      - name: dbt_valid_from
+        description: "Start timestamp for the historical version."
+        data_tests:
+          - not_null

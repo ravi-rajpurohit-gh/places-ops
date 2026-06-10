@@ -1,5 +1,3 @@
-{{ config(materialized='table') }}
-
 with expenses as (
     select * from {{ ref('stg_expenses') }}
 ),
@@ -14,6 +12,8 @@ vendors as (
 
 select
     e.expense_id,
+    e.project_id,
+    e.vendor_id,
     e.expense_date,
     e.amount,
     e.category,

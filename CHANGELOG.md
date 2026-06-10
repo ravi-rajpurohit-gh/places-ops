@@ -1,8 +1,17 @@
 # Changelog
 
+## 2026-06-10
+
+- Expanded the dbt DAG with a reusable intermediate spend aggregate and a project-performance mart.
+- Added composable Jinja macros, project variables, a reusable accepted-range generic test, relationship tests, and a cross-grain spend reconciliation assertion.
+- Added an SCD Type 2 project status snapshot, a dashboard exposure, and pull-request dbt CI.
+- Documented the implemented dbt patterns and explicit Snowflake deployment path; verified the full build with `PASS=59 WARN=0 ERROR=0 SKIP=0`.
+- Reframed public documentation around engineering scope, operational boundaries, release evidence, and maintainability.
+- Made synthetic source generation reproducible with explicit random-seed and as-of-date controls.
+
 ## 2026-05-26
 
-- Added a portfolio brief and refreshed case study materials with current architecture, data model, lifecycle timeline, production mapping, and portfolio talking points.
+- Added a concise system overview and refreshed case study materials with current architecture, data model, lifecycle timeline, production mapping, and technical review points.
 - Aligned Cost & Risk chart colors with the application palette, added a fixed-height scrollable vendor risk table, moved Current Stack above Production Mirror, and embedded governed insight panels across Cost & Risk, Platform Health, and Dictionary.
 - Expanded the Dictionary tab with business metric definitions and switched dbt model documentation to read from `models/schema.yml` so documentation edits appear without requiring a manifest refresh.
 - Fixed remaining white Streamlit surfaces by moving the app theme config to the dark PlacesOps palette, replacing native dataframes with dark HTML tables, and rendering assistant turns as custom bordered dark message bubbles.

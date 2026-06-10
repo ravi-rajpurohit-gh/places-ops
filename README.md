@@ -6,7 +6,7 @@
 
 **Live App:** [places-ops.streamlit.app](https://places-ops.streamlit.app/)
 
-PlacesOps is a lightweight, production-minded proof of concept for construction and corporate operations analytics. It models project, vendor, budget, and expense data into a dashboard that helps business stakeholders understand budget variance, delayed-project exposure, cost categories, and vendor reliability while giving data engineers visibility into pipeline health.
+PlacesOps is a construction and corporate operations analytics reference implementation. It models project, vendor, budget, and expense data into governed analytical datasets and an operations dashboard that helps business stakeholders understand budget variance, delayed-project exposure, cost categories, and vendor reliability while giving data engineers visibility into pipeline health.
 
 The data is synthetic. The project is designed to mirror the shape of enterprise analytics work without using or implying access to company-private data.
 
@@ -23,7 +23,7 @@ The vision for PlacesOps is a small but realistic enterprise analytics hub:
 - expose dbt pipeline health and data documentation,
 - and provide a foundation for governed AI dashboards over trusted metrics.
 
-The project is intentionally compact, but the design choices reflect production-grade habits: modular modeling, business-friendly metrics, documented data assets, quality checks, and operational telemetry.
+The project is intentionally compact and locally executable. Its design emphasizes production data-engineering practices: modular modeling, explicit data grain, governed business metrics, documented data contracts, automated quality checks, lineage, CI, and operational telemetry.
 
 ## Who It Is Built For
 
@@ -47,13 +47,17 @@ The Streamlit app serves two audiences:
 The project demonstrates common enterprise analytics patterns:
 
 - staging models for raw operational sources,
-- a final fact mart for project spend analytics,
+- an intermediate project-spend aggregate plus expense-grain and project-grain marts,
+- reusable Jinja macros and project variables for governed budget logic,
+- generic, relationship, and reconciliation tests across model grains,
+- an SCD Type 2 snapshot for project status and budget history,
+- a dbt exposure connecting marts to the PlacesOps dashboard,
 - BI-ready metrics for executive and operational dashboards,
 - data documentation generated from transformation metadata,
 - engineering telemetry that makes pipeline reliability visible,
 - and governed AI-style access to trusted metrics without relying on external API quotas.
 
-## Production Relevance
+## Engineering Scope
 
 PlacesOps mirrors the kind of analytics platform work common in large operating companies:
 
@@ -63,7 +67,7 @@ PlacesOps mirrors the kind of analytics platform work common in large operating 
 - pipeline health is visible alongside the business dashboard,
 - and the project creates a natural foundation for AI-assisted dashboards over approved metrics.
 
-The intent is to show an ability to reason from business requirements to a working data product, not just build isolated ETL scripts.
+PlacesOps is a reference implementation, not a claim of operating a production Snowflake deployment. DuckDB and synthetic data keep local execution deterministic and accessible; the repository documents the controls and architectural changes required to operate the same modeling approach with enterprise source systems and Snowflake.
 
 ## Technology Stack
 
@@ -93,13 +97,16 @@ flowchart LR
     A["Synthetic project data"] --> D["dbt staging models"]
     B["Synthetic vendor data"] --> D
     C["Synthetic expense data"] --> D
-    D --> E["fct_project_spend"]
-    E --> F["Streamlit business dashboard"]
-    G["dbt run_results.json"] --> H["Pipeline health view"]
-    I["models/schema.yml"] --> J["Data dictionary"]
-    E --> K["Governed Insights Assistant"]
-    H --> K
-    J --> K
+    D --> E["int_project_spend"]
+    D --> F["fct_project_spend"]
+    E --> G["mart_project_performance"]
+    F --> H["Streamlit business dashboard"]
+    G --> H
+    I["dbt run_results.json"] --> J["Pipeline health view"]
+    K["models/schema.yml"] --> L["Data dictionary"]
+    H --> M["Governed Insights Assistant"]
+    J --> M
+    L --> M
 ```
 
 ## Run It Locally
@@ -114,25 +121,20 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Track goals, decisions, lifecycle, and progress in [docs/PROJECT_TRACKER.md](docs/PROJECT_TRACKER.md), [docs/CASE_STUDY.md](docs/CASE_STUDY.md), [docs/PORTFOLIO_BRIEF.md](docs/PORTFOLIO_BRIEF.md), and [docs/ENGINEERING_NOTES.md](docs/ENGINEERING_NOTES.md).
+The generator defaults to random seed `42`; pass `--as-of-date YYYY-MM-DD` when an exact repeatable date window is required.
 
-## Project Checkpoint
+Engineering decisions, operations, and lifecycle history are documented in [docs/ENGINEERING_NOTES.md](docs/ENGINEERING_NOTES.md), [docs/DBT_IMPLEMENTATION_GUIDE.md](docs/DBT_IMPLEMENTATION_GUIDE.md), [docs/PROJECT_TRACKER.md](docs/PROJECT_TRACKER.md), and [docs/CASE_STUDY.md](docs/CASE_STUDY.md).
 
-As of 2026-05-26, PlacesOps is in a portfolio-ready checkpoint state:
+## Current Release
+
+As of 2026-06-10, the current PlacesOps release includes:
 
 - the Streamlit app is reframed as a construction and corporate analytics command center,
 - generated data uses neutral operating regions instead of company-specific campuses,
 - DuckDB tables are refreshed from generated project, vendor, and expense data,
-- dbt artifacts show 14 passing nodes/tests,
+- the dbt DAG includes reusable Jinja macros, an intermediate model, two marts, an SCD Type 2 snapshot, a dashboard exposure, and CI,
+- dbt artifacts show `PASS=59 WARN=0 ERROR=0 SKIP=0`,
 - the assistant answers governed natural-language questions with contextual charts and trace metadata,
 - governed insight panels appear across Executive Operations, Cost & Risk, Platform Health, and Dictionary,
 - the Dictionary tab includes business metric definitions plus current `schema.yml` model documentation,
-- tracker, case study, portfolio brief, engineering notes, changelog, root README, and app README are aligned.
-
-## What This Demonstrates About My Approach
-
-- I can translate ambiguous business domains into clear analytical models and dashboards.
-- I think about data products end to end: ingestion, modeling, metrics, documentation, dashboarding, observability, and production migration.
-- I understand that enterprise analytics must serve both business users and engineering operators.
-- I can quickly ideate and build production-grade proof of concepts around modern data and AI patterns.
-- I treat AI dashboards as governed interfaces over trusted metrics, not free-form access to unvalidated data.
+- tracker, case study, implementation guide, engineering notes, changelog, root README, and app README are aligned.

@@ -1,0 +1,13 @@
+version: 2
+
+exposures:
+  - name: places_ops_dashboard
+    label: PlacesOps Operations Dashboard
+    type: dashboard
+    maturity: medium
+    description: "Executive operations, cost risk, platform health, dictionary, and governed assistant workflows."
+    depends_on:
+      - ref('fct_project_spend')
+    owner:
+      name: Ravi Rajpurohit
+      email: ravirajpurohit414@gmail.com

@@ -4,7 +4,7 @@
 
 PlacesOps is a production-minded analytics application for transforming construction, vendor, budget, and expense data into trusted corporate operations insights. It combines dbt modeling, data quality, dashboarding, dbt artifact observability, generated documentation, and governed natural-language analysis in one compact product surface.
 
-The application is designed around a realistic enterprise analytics pattern: operational source data is standardized through staging models, joined into a trusted spend mart, monitored through dbt artifacts, and consumed through business dashboards, metric documentation, and governed AI-assisted workflows.
+The application is designed around a realistic enterprise analytics pattern: operational source data is standardized through staging models, transformed through a reusable intermediate aggregate, published at expense and project grains, monitored through dbt artifacts, and consumed through business dashboards, metric documentation, and governed AI-assisted workflows.
 
 ## Product Goals
 
@@ -35,7 +35,7 @@ timeline
                : Replaced remaining white native surfaces with dark themed controls and tables
                : Added cross-tab governed insight panels for cost risk, platform health, and metric definitions
                : Added scrollable vendor reliability review table and aligned chart palette
-               : Expanded schema.yml documentation and portfolio-ready case study assets
+               : Expanded schema.yml documentation and technical review assets
 ```
 
 ## Delivery Phases
@@ -44,8 +44,8 @@ timeline
 | --- | --- | --- |
 | Product Framing | Defined the analytics hub vision, users, business metrics, and production mapping. | Root README and app README. |
 | Data Generation | Created privacy-safe project, vendor, and expense records. | `generate_mock_data.py` and `raw_data/`. |
-| Data Modeling | Built staging models and a project spend fact mart. | `app/models/`. |
-| Quality & Observability | Added dbt tests, run artifacts, success-rate metrics, and runtime telemetry. | `schema.yml`, `target/run_results.json`, Platform Health tab. |
+| Data Modeling | Built typed staging views, a reusable intermediate aggregate, and expense-grain and project-grain marts. | `app/models/`. |
+| Quality & Observability | Added reusable generic tests, referential checks, reconciliation assertions, an SCD Type 2 snapshot, dbt artifacts, and runtime telemetry. | `schema.yml`, `snapshots/`, `tests/`, `target/run_results.json`, Platform Health tab. |
 | Business Analytics | Added executive KPIs, region spend, budget variance, delayed exposure, cost categories, and vendor reliability risk. | Streamlit app tabs. |
 | Governed AI Workflow | Added natural-language routing to approved analytical functions with chart responses and trace metadata. | Insights Assistant tab in `app/app.py`. |
 | Cross-Tab AI Readouts | Embedded governed narrative insights into executive, cost/risk, platform, and dictionary workflows. | `render_insight_panel` in `app/app.py`. |
@@ -71,14 +71,16 @@ flowchart LR
     A["Generated projects"] --> D["dbt staging models"]
     B["Generated vendors"] --> D
     C["Generated expenses"] --> D
-    D --> E["fct_project_spend"]
-    E --> F["Executive Operations"]
-    E --> G["Cost & Vendor Risk"]
-    H["dbt run_results.json"] --> I["Platform Health"]
-    J["models/schema.yml"] --> K["Dictionary"]
-    E --> L["Governed Insights Assistant"]
-    I --> L
-    K --> L
+    D --> E["int_project_spend"]
+    D --> F["fct_project_spend"]
+    E --> G["mart_project_performance"]
+    F --> H["Executive Operations and Cost Risk"]
+    G --> H
+    I["dbt run_results.json"] --> J["Platform Health"]
+    K["models/schema.yml"] --> L["Dictionary"]
+    H --> M["Governed Insights Assistant"]
+    J --> M
+    L --> M
 ```
 
 ## Data Model
@@ -121,12 +123,12 @@ erDiagram
     }
 ```
 
-## Portfolio Assets
+## Review Assets
 
-Use these as the core visuals and talking points for a portfolio case study:
+Use these as the core visuals and technical review points:
 
 - **Problem frame:** Cross-functional operations teams need trusted spend, budget, vendor, and delivery-risk metrics from messy operational data.
-- **Architecture diagram:** Source data to dbt staging models, `fct_project_spend`, Streamlit workflows, dbt artifacts, schema documentation, and governed assistant.
+- **Architecture diagram:** Source data to dbt staging and intermediate models, expense and project marts, Streamlit workflows, dbt artifacts, schema documentation, and governed assistant.
 - **Data model:** Projects, vendors, expenses, and the joined spend fact mart.
 - **Lifecycle timeline:** 2026-05-24 foundation, 2026-05-25 product rebuild, 2026-05-26 production polish and governed AI readouts.
 - **AI dashboard angle:** Governed readouts and assistant routes answer approved business questions with traceable metrics, charts, token estimates, rows considered, latency, API calls, and API cost.
@@ -136,7 +138,10 @@ Use these as the core visuals and talking points for a portfolio case study:
 
 - Unique and non-null tests protect project, vendor, expense, and fact-table keys.
 - Accepted-value tests validate project status values.
-- Not-null tests protect spend amounts.
+- A reusable accepted-range generic test validates budgets, spend, reliability scores, ratios, and counts.
+- Relationship tests detect orphaned project and vendor references.
+- A singular reconciliation test protects total spend across expense and project grains.
+- An SCD Type 2 snapshot preserves changes to project status and approved budget.
 - dbt run artifacts expose model/test results and runtime telemetry.
 - Browser smoke testing verifies the business dashboard and assistant surface.
 - Warehouse verification confirms generated neutral regions are reflected in `fct_project_spend`.
@@ -154,13 +159,13 @@ Use these as the core visuals and talking points for a portfolio case study:
 
 ## Checkpoint
 
-As of 2026-05-26, PlacesOps is in a stable portfolio-ready checkpoint:
+As of 2026-06-10, PlacesOps is in a stable release checkpoint:
 
 - app has five product workflows,
 - generated data and warehouse artifact use neutral operating regions,
-- dbt artifacts report 14 passing nodes/tests,
+- dbt artifacts report `PASS=59 WARN=0 ERROR=0 SKIP=0`,
 - assistant answers questions with text, visuals, and trace metadata,
 - governed insight panels appear across the business, platform, and dictionary workflows,
 - UI uses a domain-aligned production theme with dark controls, custom dark tables, and portfolio attribution at `ravirajpurohit.com`,
 - documentation is aligned across README, tracker, engineering notes, changelog, and case study,
-- remaining work is optional polish or deployment rather than core functionality.
+- remaining work centers on executing the documented Snowflake deployment path and expanding operational automation.

@@ -1,17 +1,17 @@
 # PlacesOps Project Tracker
 
-Last updated: 2026-05-26
+Last updated: 2026-06-10
 
 ## Goal
 
-Build PlacesOps as a public, portfolio-ready analytics product that demonstrates construction operations analytics, corporate reporting, budget tracking, vendor risk, dbt modeling, dashboarding, data quality, platform observability, and governed AI-assisted insights.
+Build PlacesOps as a maintainable analytics reference implementation for construction operations, corporate reporting, budget tracking, vendor risk, dbt modeling, dashboarding, data quality, platform observability, and governed AI-assisted insights.
 
 ## Success Criteria
 
 - Keep the app business-first: construction projects, vendors, budgets, delayed work, cost categories, and operational risk.
 - Keep engineering trust visible: dbt models, tests, run artifacts, model documentation, and pipeline health.
-- Keep the repository public-safe: no company-private data, no employer-specific positioning, and no application-process notes.
-- Preserve enough lifecycle detail to support a future portfolio case study and project-management narrative.
+- Keep the repository public-safe: no company-private data, employer-specific positioning, or application-process notes.
+- Preserve lifecycle detail, engineering decisions, validation results, and operational boundaries.
 - Maintain a credible production migration path around AWS, Snowflake, dbt, Qlik/Power BI, observability, and approved AI/MCP workflows.
 
 ## Current Status
@@ -24,7 +24,8 @@ Build PlacesOps as a public, portfolio-ready analytics product that demonstrates
 - Cross-tab governed insight panels appear in Executive Ops, Cost & Risk, Platform Health, and Dictionary.
 - UI uses a warm, dark, production-style operations theme with custom dark controls, tables, and chat surfaces.
 - Dictionary includes business metric definitions plus current `models/schema.yml` model documentation.
-- Portfolio materials include architecture, data model, lifecycle, production mapping, decision log, and a concise portfolio brief.
+- Supporting documentation includes architecture, data model, lifecycle, production mapping, decision log, and a dbt implementation guide.
+- dbt implementation now includes reusable Jinja macros, layered staging/intermediate/mart models, 52 data tests, an SCD Type 2 snapshot, a dashboard exposure, and pull-request CI.
 
 ## Key Decisions
 
@@ -51,19 +52,20 @@ Build PlacesOps as a public, portfolio-ready analytics product that demonstrates
 | 2026-05-26 | Polished UI/UX with domain-aligned colors, dark Streamlit controls, production-style prompt cards, and portfolio attribution. |
 | 2026-05-26 | Fixed native white surfaces with dark Streamlit theme config, custom dark tables, visible assistant bubbles, and dark chat input. |
 | 2026-05-26 | Added cross-tab governed insight panels, aligned chart colors, scrollable vendor risk table, and expanded model documentation. |
-| 2026-05-26 | Added portfolio brief, refreshed case study diagrams, architecture, data model, tech stack, and portfolio talking points. |
+| 2026-05-26 | Added a concise system overview and refreshed case study diagrams, architecture, data model, tech stack, and technical review points. |
 | 2026-05-26 | Renamed app folder to `app`, removed public job-application language, and updated gitignore rules for local artifacts. |
+| 2026-06-10 | Deepened dbt implementation with reusable Jinja macros, project variables, an intermediate aggregate, a project-performance mart, custom generic and reconciliation tests, an SCD Type 2 snapshot, a dashboard exposure, and pull-request CI. |
 
 ## Open Questions
 
-- Whether to add screenshots or short GIFs for the portfolio case study.
-- Whether to add a Snowflake-style DDL/dbt production appendix.
+- Whether to add screenshots or short GIFs to the case study.
+- Whether to execute the documented Snowflake migration plan in a trial account.
 - Whether to add a Qlik/Power BI serving-layer mock or screenshot.
 - Whether to add an optional provider-backed LLM interpretation layer behind the governed router.
 
 ## Next Actions
 
 - Keep the public README concise and product-oriented.
-- Use `docs/CASE_STUDY.md` for long-form portfolio writing.
-- Use `docs/PORTFOLIO_BRIEF.md` as the short website-ready summary.
-- Rebuild dbt artifacts locally when model logic changes; keep generated `target/` output out of git.
+- Keep `docs/CASE_STUDY.md` aligned with implemented behavior and validation evidence.
+- Rebuild the tracked sample warehouse and `run_results.json` when model logic changes.
+- Execute the documented Snowflake deployment path in a trial or development account when credentials are available.
