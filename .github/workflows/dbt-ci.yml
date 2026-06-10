@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - ".github/workflows/dbt-ci.yml"
       - "app/models/**"
       - "app/macros/**"
       - "app/snapshots/**"
@@ -15,6 +16,7 @@ on:
       - "generate_mock_data.py"
   pull_request:
     paths:
+      - ".github/workflows/dbt-ci.yml"
       - "app/models/**"
       - "app/macros/**"
       - "app/snapshots/**"
